@@ -1,6 +1,7 @@
 import os
 import glob
 
+from datetime import datetime
 from fabric.api import *
 from fabric import colors
 from fabric.sftp import SFTP as _SFTP
@@ -45,39 +46,53 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
     require('branch', provided_by=[master, stable, branch, ])
 
+    print(colors.cyan("Checking out branch: %s" % env.branch))
     local('git checkout %s' % env.branch)
+
+    print(colors.cyan("Initializing/updating git submodules..."))
     local('git submodule update --init --recursive')
 
+    print(colors.cyan("Checking for uncommitted changes to the repo..."))
     _ensure_clean_repo()
+
+    print(colors.cyan("Checking for untracked files to exclude..."))
     _ignore_untracked()
+
+    print(colors.cyan("Using .gitignore file(s) to find files to exclude..."))
     _use_gitignore()
 
     env.sftp = _SFTP(env.host_string)
 
     with settings(warn_only=True):
+        print(colors.cyan("Checking for eligible files and deploying..."))
         for f in _find_file_paths(env.file_path):
             if _check_last_modified(f):
+                print(colors.green("Eligibile, deploying: %s" % f))
                 result = put(local_path=f, remote_path='/%s' % f)
                 if result.failed:
                     failed = result.failed[0]
                     new_dir = os.path.dirname(failed)
 
                     print(colors.yellow("Failed to transfer: %s" % failed))
-                    print(colors.green("Creating new directory: %s" % new_dir))
+                    print(colors.cyan("Creating new directory: %s" % new_dir))
                     env.sftp.mkdir(new_dir, False)
 
-                    print(colors.green("Retrying transfer: %s" % failed))
+                    print(colors.cyan("Retrying transfer: %s" % failed))
                     put(local_path=f, remote_path='/%s' % f)
+            else:
+                print(colors.red("Not eligibile: %s" % f))
+
 
 
 def _ensure_clean_repo():
     """
     Make sure there are no uncommitted changes being deployed.
     """
-    modified = local('git ls-files --modified', capture=True)
+    result = local('git submodule foreach --recursive git ls-files --modified', capture=True)
+    modified = [line for line in result.splitlines() if not line.startswith('Entering')]
     if modified:
         print(colors.red(
-            "Found uncommitted changes in the repository.\n"
+            "Found uncommitted changes in the repository or one of its submodules.\n"
             "Please commit or stash your changes before deploying."))
         exit(1)
 
@@ -94,7 +109,7 @@ def _check_last_modified(file_path):
             os.stat(file_path).st_mtime)
 
         if local_last_modified <= remote_last_modified:
-            transfer = False
+            return False
     except IOError:
         pass
     return transfer
@@ -137,24 +152,28 @@ def _ignore_untracked():
     Grabs list of files that haven't been added to the git repo and
     adds them to `env.ignore_files_containing`.
     """
-    result = local('git ls-files --others --exclude-standard', capture=True)
-    if result:
+    result = local('git submodule foreach --recursive git ls-files --others --exclude-standard', capture=True)
+    untracked = [line for line in result.splitlines() if not line.startswith('Entering')]
+    if untracked:
         for line in result.splitlines():
             env.ignore_files_containing.append(line)
 
 
 def _use_gitignore():
     """
-    Uses glob to find files that shouldn't be deployed based on your .gitignore file,
+    Uses glob to find files that shouldn't be deployed based on your .gitignore file(s),
     adds them to `env.ignore_files_containing`.
     """
-    with open('.gitignore') as ignore_file:
-        try:
-            tests = [
-                line for line in ignore_file.read().splitlines()
-                if not line.startswith('#') and line is not ''
-            ]
-            for test in tests:
-                env.ignore_files_containing = env.ignore_files_containing + glob.glob(test)
-        except IOError:
-            return False
+    ignore_files = local('find . -name ".gitignore" -print', capture=True)
+    for file_path in ignore_files.splitlines():
+        with open(file_path) as ignore_file:
+            dir = os.path.dirname(file_path).replace('./', '')
+            try:
+                tests = [
+                    "%s/%s" % (dir, line) for line in ignore_file.read().splitlines()
+                    if not line.startswith('#') and line is not ''
+                ]
+                for test in tests:
+                    env.ignore_files_containing = env.ignore_files_containing + glob.glob(test)
+            except IOError:
+                return False
