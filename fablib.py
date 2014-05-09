@@ -5,6 +5,7 @@ from datetime import datetime
 from fabric.api import *
 from fabric import colors
 from fabric.sftp import SFTP as _SFTP
+from fabric.contrib.console import confirm
 
 env.ignore_files_containing = ['.git', ]
 
@@ -30,6 +31,14 @@ def branch(branch_name):
     """
     print(colors.red('On %s' % branch_name))
     env.branch = branch_name
+
+
+def rollback():
+    """
+    Deploy the most recent rollback point.
+    """
+    print(colors.red('Rolling back last deploy'))
+    env.branch = 'rollback'
 
 
 def theme(name):
@@ -82,6 +91,23 @@ def deploy():
             else:
                 print(colors.red("Not eligibile: %s" % f))
 
+        if env.settings == 'production' and env.branch != 'rollback':
+            set_rollback_point()
+
+
+def set_rollback_point():
+    """
+    Create a `rollback` tag and push to the remote.
+    Deletes any existing `rollback` tag on the remote.
+    """
+    if confirm("Tag this release as a rollback point?"):
+        print(colors.cyan("Tagging this release as a rollback point.."))
+
+        with settings(warn_only=True):
+            local('git push --delete origin rollback')
+
+        local('git tag -f rollback')
+        local('git push origin rollback')
 
 
 def _ensure_clean_repo():
