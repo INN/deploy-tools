@@ -32,6 +32,11 @@ def branch(branch_name):
     env.branch = branch_name
 
 
+def rollback():
+    print(colors.red('Rolling back last deploy'))
+    env.branch = 'rollback'
+
+
 def theme(name):
     """
     Specify a theme directory to deploy
@@ -45,6 +50,10 @@ def deploy():
     """
     require('settings', provided_by=["production", "staging", ])
     require('branch', provided_by=[master, stable, branch, ])
+
+    if env.branch != 'rollback':
+        local('git tag -f rollback')
+        local('git fetch')
 
     print(colors.cyan("Checking out branch: %s" % env.branch))
     local('git checkout %s' % env.branch)
@@ -81,7 +90,6 @@ def deploy():
                     put(local_path=f, remote_path='/%s' % f)
             else:
                 print(colors.red("Not eligibile: %s" % f))
-
 
 
 def _ensure_clean_repo():
