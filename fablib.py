@@ -5,6 +5,7 @@ from fabric import colors
 from fabric.contrib.console import confirm
 
 env.path = ''
+env.dry_run = False
 
 def stable():
     """
@@ -43,6 +44,13 @@ def path(path):
     Specify the project's path on remote server
     """
     env.path = path
+
+
+def dry_run():
+    """
+    Don't transfer files, just output what happen during a real deployment.
+    """
+    env.dry_run = True
 
 
 def deploy():
@@ -113,12 +121,20 @@ def verify_prerequisites():
 
 # Utilities
 def _initial_deploy(dest_path):
-    ret = local('git ftp init --user %s --passwd %s sftp://%s/%s' % (
+    if env.dry_run:
+            ret = local('git ftp init --dry-run --user %s --passwd %s sftp://%s/%s' % (
         env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+    else:
+        ret = local('git ftp init --user %s --passwd %s sftp://%s/%s' % (
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
     return ret
 
 
 def _deploy(dest_path):
-    ret = local('git ftp push --user %s --passwd %s sftp://%s/%s' % (
-        env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+    if env.dry_run:
+        ret = local('git ftp push --dry-run --user %s --passwd %s sftp://%s/%s' % (
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+    else:
+        ret = local('git ftp push --user %s --passwd %s sftp://%s/%s' % (
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
     return ret
