@@ -43,21 +43,21 @@ def rollback():
 
 def path(path):
     """
-    Specify the project's path on remote server
+    Specify the project's path on remote server.
     """
     env.path = path
 
 
 def dry_run():
     """
-    Don't transfer files, just output what happen during a real deployment.
+    Don't transfer files, just output what would happen during a real deployment.
     """
     env.dry_run = True
 
 
 def deploy():
     """
-    Deploy local copy of repository to target environment
+    Deploy local copy of repository to target environment.
     """
     require('settings', provided_by=["production", "staging", ])
     require('branch', provided_by=[master, stable, branch, ])
@@ -69,7 +69,7 @@ def deploy():
             run('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
             run('git fetch')
         else:
-            print(colors.yellow("Not .git-ftp.log found on server. Unable to set rollback point."))
+            print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
 
     print(colors.cyan("Checking out branch: %s" % env.branch))
     local('git checkout %s' % env.branch)
