@@ -4,6 +4,8 @@ from fabric.api import *
 from fabric import colors
 from fabric.contrib.console import confirm
 
+from StringIO import StringIO
+
 env.path = ''
 env.dry_run = False
 
@@ -60,6 +62,15 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
     require('branch', provided_by=[master, stable, branch, ])
 
+    if env.branch != 'rollback':
+        rollback_sha1 = _get_rollback_sha1()
+        if rollback_sha1:
+            print(colors.cyan("Setting rollback point..."))
+            run('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
+            run('git fetch')
+        else:
+            print(colors.yellow("Not .git-ftp.log found on server. Unable to set rollback point."))
+
     print(colors.cyan("Checking out branch: %s" % env.branch))
     local('git checkout %s' % env.branch)
 
@@ -71,24 +82,6 @@ def deploy():
             if ret.return_code in [8, 5, ]:
                 print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
                 _initial_deploy(env.path)
-
-        if env.settings == 'production' and env.branch != 'rollback' and ret.return_code == 0:
-            set_rollback_point()
-
-
-def set_rollback_point():
-    """
-    Create a `rollback` tag and push to the remote.
-    Deletes any existing `rollback` tag on the remote.
-    """
-    if confirm("Tag this release as a rollback point?"):
-        print(colors.cyan("Tagging this release as a rollback point.."))
-
-        with settings(warn_only=True):
-            local('git push --delete origin rollback')
-
-        local('git tag -f rollback')
-        local('git push origin rollback')
 
 
 def verify_prerequisites():
@@ -138,3 +131,15 @@ def _deploy(dest_path):
         ret = local('git ftp push --user "%s" --passwd "%s" sftp://%s/%s' % (
             env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
     return ret
+
+
+def _get_rollback_sha1():
+    with settings(warn_only=True):
+        log_file = StringIO()
+        get(remote_path='/.git-ftp.log', local_path=log_file)
+        log_file.seek(0)
+        try:
+            rollback_commit = log_file.read().splitlines()[0]
+        except IndexError:
+            return None
+        return rollback_commit
