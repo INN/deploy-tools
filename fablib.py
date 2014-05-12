@@ -83,14 +83,32 @@ def set_rollback_point():
         local('git push origin rollback')
 
 
-def install_prerequisites():
+def verify_prerequisites():
     """
-    Install curl (with ssh) and git-ftp
+    Checks to make sure you have curl (with ssh) and git-ftp installed, installs them if you do not.
     """
     local('brew update')
-    local('brew install curl --with-ssh')
-    local('brew link --force curl')
-    local('brew install git-ftp')
+
+    print(colors.cyan("Verifying your installation of curl..."))
+    ret = local('curl -V | grep sftp', capture=True)
+    if ret.return_code == 1:
+        print(colors.yellow(
+            'Your version of curl does not support sftp. Installing curl with sftp support via brew...'))
+        local('brew install curl --with-ssh')
+        local('brew link --force curl')
+    else:
+        print(colors.green('Your installation of curl supports sftp!'))
+
+    print(colors.cyan('Ensuring you have git-ftp installed...'))
+    ret = local('git ftp --version', capture=True)
+    if ret.return_code == 1:
+        print(colors.yellow(
+            'You don not have git-ftp installed. Installing...'))
+        local('brew install git-ftp')
+    else:
+        print(colors.green('You have git-ftp installed!'))
+
+    print(colors.green('Your system is ready to deploy code!'))
 
 
 # Utilities

@@ -39,6 +39,7 @@ Then:
 
     $ workon projectnamegoeshere
     $ pip install -r requirements.txt
+    $ fab verify_prerequisites
 
 Now edit the `fabfile.py` and adjust the settings for your project.
 
