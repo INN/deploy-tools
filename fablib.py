@@ -68,7 +68,7 @@ def deploy():
         ret = _deploy(env.path)
 
         if ret.return_code and ret.return_code > 0:
-            if ret.return_code == 8:
+            if ret.return_code in [8, 5, ]:
                 print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
                 _initial_deploy(env.path)
 
