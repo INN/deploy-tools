@@ -74,6 +74,9 @@ def deploy():
     print(colors.cyan("Checking out branch: %s" % env.branch))
     local('git checkout %s' % env.branch)
 
+    if env.branch == 'rollback':
+        local('git submodule update --init --recursive')
+
     with settings(warn_only=True):
         print(colors.cyan("Deploying..."))
         ret = _deploy(env.path)
