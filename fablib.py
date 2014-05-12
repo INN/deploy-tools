@@ -123,18 +123,18 @@ def verify_prerequisites():
 def _initial_deploy(dest_path):
     if env.dry_run:
         ret = local('git ftp init --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
     else:
         ret = local('git ftp init --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
     return ret
 
 
 def _deploy(dest_path):
     if env.dry_run:
         ret = local('git ftp push --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
     else:
         ret = local('git ftp push --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep), capture=True)
+            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
     return ret
