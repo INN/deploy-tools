@@ -66,8 +66,8 @@ def deploy():
         rollback_sha1 = _get_rollback_sha1()
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
-            run('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
-            run('git fetch')
+            local('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
+            local('git fetch')
         else:
             print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
 
