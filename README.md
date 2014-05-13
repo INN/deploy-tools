@@ -13,6 +13,8 @@ Setup python dev environment
     $ sudo pip install virtualenvwrapper
     $ echo 'source /usr/local/bin/virtualenvwrapper.sh' >> ~/.zshrc
 
+Change "~/.zshrc" to the appropriate rc file for your shell. If you're using bash: "~/.bashrc".
+
 Open a new terminal window or tab and create a virtual environment for your project:
 
     $ mkvirtualenv projectnamegoeshere --no-site-packages
