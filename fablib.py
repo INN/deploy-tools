@@ -6,6 +6,7 @@ from fabric.contrib.console import confirm
 
 from StringIO import StringIO
 
+# Deployment related
 env.path = ''
 env.dry_run = False
 
@@ -112,6 +113,81 @@ def verify_prerequisites():
             print(colors.green('You have git-ftp installed!'))
 
         print(colors.green('Your system is ready to deploy code!'))
+
+
+# Local development helpers
+env.vagrant_host = '192.168.33.10'
+env.vagrant_db_user = 'root'
+env.vagrant_db_pass = 'root'
+
+def upgrade_wordpress(tag):
+    """
+    Downloads specified version of WordPress from https://github.com/WordPress/WordPress and
+    installs it.
+    """
+    with settings(warn_only=True):
+        try:
+            print(colors.cyan('Downloading WordPress %s' % tag))
+            local('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag)
+
+            print(colors.cyan('Unzipping...'))
+            local('unzip %s.zip' % tag)
+
+            print(colors.cyan('Copying new files to our project directory'))
+            local('rsync -ru WordPress-%s/* .' % tag)
+        finally:
+            print(colors.cyan('Cleaning up...'))
+            local('rm -Rf %s.zip' % tag)
+            local('rm -Rf WordPress-%s' % tag)
+
+        print(colors.cyan('Finished upgrading WordPress!'))
+
+
+def create_vagrant_db(name="vagrant"):
+    """
+    Create a new database on your vagrant instance
+    """
+    env.vagrant_db_name = name
+
+    print(colors.cyan("Creating database: %(vagrant_db_name)s" % env))
+    local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "create database %(vagrant_db_name)s;"' % env)
+    print(colors.green('Finished creating database!'))
+
+
+def destroy_vagrant_db(name="vagrant"):
+    """
+    Drop a database on your vagrant instance
+    """
+    if confirm(colors.red("Are you sure you want to destroy database: %s") % name):
+        env.vagrant_db_name = name
+
+        print(colors.red("Destroying database: %(vagrant_db_name)s" % env))
+        local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "drop database %(vagrant_db_name)s;"' % env)
+        print(colors.green('Finished destroying database!'))
+    else:
+        print(colors.cyan("Exiting..."))
+        exit()
+
+
+def load_vagrant_db(dump=None, name="vagrant"):
+    """
+    Connects to your vagrant instance and loads the `vagrant` database with specified dump file
+    """
+    env.vagrant_db_name = name
+    env.vagrant_dump_file = os.path.expanduser(dump)
+
+    print(colors.cyan("Loading database..."))
+    local('cat %(vagrant_dump_file)s | mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s %(vagrant_db_name)s' % env)
+    print(colors.green('Finished loading database!'))
+
+
+def reload_vagrant_db(dump=None, name="vagrant"):
+    """
+    Destroy, create and load a database on your vagrant instance
+    """
+    destroy_vagrant_db(name)
+    create_vagrant_db(name)
+    load_vagrant_db(dump, name)
 
 
 # Utilities
