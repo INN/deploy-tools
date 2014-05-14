@@ -47,6 +47,8 @@ Now edit the `fabfile.py` and adjust the settings for your project.
 
 ## Usage
 
+### Deployment
+
 These tools use [Fabric](http://www.fabfile.org/).
 
 To see a list of available commands:
@@ -64,3 +66,38 @@ And production:
 To switch to a different branch and deploy
 
     $ fab staging branch:newfeaturebranchname deploy
+
+### Local development with Vagrant
+
+The examples directory also includes a `Vagrantfile`, a bunch of config files for Apache, PHP, MySQL and a `boot-script.sh` for provisioning a Vagrant instance for local development.
+
+Assuming you have VirtualBox and Vagrant installed, start the Vagrant box with:
+
+    $ vagrant up
+
+It should take about ten minutes to complete the provisioning process.
+
+When the Vagrant box is ready, you'll want to edit your `/etc/hosts` file (i.e. not the `hosts` file on the Vagrant box), adding:
+
+    192.168.33.10 vagrant.dev
+
+Once you've done that, you should be able to visit [http://vagrant.dev](http://vagrant.dev) and see your project running.
+
+A couple notes:
+
+- The Apache configuration for our Vagrant box uses the root directory of your project as the www root for vagrant.dev.
+- Our provisioning script installs mysql and does the following:
+    - Sets a password for the root user with value 'root'.
+    - Creates an empty database called 'vagrant' which you can use for local development.
+
+### Installing and/or upgrading WordPress
+
+In setting up your dev environment, you'll want to pull in all the necessary WordPress files if they are not included in the project repository. To do this, use the command:
+
+    $ fab upgrade_wordpress:"3.9.1"
+
+Where "3.9.1" identifies the tagged version of the [WordPress repository](https://github.com/WordPress/WordPress) that you want to use.
+
+Fabric will download the release .zip file from Github and extract its contents to the project root.
+
+The `gitignore` file included in the examples directory is a good starter for WordPress projects destined for deployment to WPEngine. It will help keep your project repo tidy by ignoring all WordPress core files that are unnecessary for deployment.
