@@ -100,6 +100,9 @@ usermod -a -G www-data $USERNAME
 # Enable our dev site
 a2ensite vagrant
 
+# Make sure Apache's rewrite module is enabled
+a2enmod rewrite
+
 # Create a new database for our site
 mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "create database $VAGRANT_DB_NAME;"
 mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "grant all privileges on *.* to '$VAGRANT_DB_USER'@'%' identified by '$VAGRANT_DB_PASS'";

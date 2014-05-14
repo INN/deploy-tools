@@ -1,5 +1,6 @@
 <VirtualHost *:80>
   ServerName vagrant.dev
+  ServerAlias *.vagrant.dev
 
   DocumentRoot /vagrant
   <Directory />
