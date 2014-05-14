@@ -143,6 +143,19 @@ def upgrade_wordpress(tag):
         print(colors.cyan('Finished upgrading WordPress!'))
 
 
+def search_replace_domain(dump=None, search=None, replacement="vagrant.dev"):
+    """
+    Search for and replace domain in a WordPress database dump
+
+    Example:
+
+        $ fab search_replace_domain:dump.sql,"inndev.wpengine.com"
+    """
+    dump = os.path.expanduser(dump)
+    print(colors.cyan('Cleaning sql file. Searching for: %s, replacing with: %s' % (search, replacement)))
+    local('cat %s | sed s/%s/%s/g > prepared.sql' % (dump, search, replacement))
+
+
 def create_vagrant_db(name="vagrant"):
     """
     Create a new database on your vagrant instance
@@ -173,12 +186,16 @@ def load_vagrant_db(dump=None, name="vagrant"):
     """
     Connects to your vagrant instance and loads the `vagrant` database with specified dump file
     """
-    env.vagrant_db_name = name
-    env.vagrant_dump_file = os.path.expanduser(dump)
+    if dump:
+        env.vagrant_db_name = name
+        env.vagrant_dump_file = os.path.expanduser(dump)
 
-    print(colors.cyan("Loading database..."))
-    local('cat %(vagrant_dump_file)s | mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s %(vagrant_db_name)s' % env)
-    print(colors.green('Finished loading database!'))
+        print(colors.cyan("Loading database..."))
+        local('cat %(vagrant_dump_file)s | mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s %(vagrant_db_name)s' % env)
+        print(colors.green('Finished loading database!'))
+    else:
+        print(colors.yellow('Please specify which database file to load!'))
+        exit()
 
 
 def reload_vagrant_db(dump=None, name="vagrant"):
