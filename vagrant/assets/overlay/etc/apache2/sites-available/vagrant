@@ -1,0 +1,23 @@
+<VirtualHost *:80>
+  ServerName vagrant.dev
+
+  DocumentRoot /vagrant
+  <Directory />
+    Options FollowSymLinks
+    AllowOverride None
+  </Directory>
+  <Directory /vagrant>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride all
+    Order allow,deny
+    allow from all
+  </Directory>
+
+  ErrorLog /home/vagrant/logs/vagrant_http_error.log
+
+  # Possible values include: debug, info, notice, warn, error, crit,
+  # alert, emerg.
+  LogLevel warn
+
+  CustomLog /home/vagrant/logs/vagrant_http_access.log combined
+</VirtualHost>

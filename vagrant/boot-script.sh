@@ -81,8 +81,6 @@ chmod -Rf go-rwx /home/$USERNAME/.ssh
 
 # setup some directories
 mkdir /home/$USERNAME/logs
-mkdir /home/$USERNAME/sites
-mkdir /home/$USERNAME/nginx
 
 # Fix any perms that might have gotten messed up
 chown -Rf $USERNAME:$USERNAME /home/$USERNAME
@@ -93,5 +91,11 @@ usermod -a -G www-data $USERNAME
 # Restart everything
 service apache2 restart
 service mysql restart
+
+echo "To finish installing mysql, login to your vagrant box:\n\n"
+echo "    $ vagrant ssh\n\n"
+echo "And run:\n\n"
+echo "    $ mysql_install_db\n"
+echo "    $ mysql_secure_installation\n\n"
 
 echo 'All setup!'
