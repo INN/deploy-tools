@@ -88,14 +88,27 @@ chown -Rf $USERNAME:$USERNAME /home/$USERNAME
 # make sure our user is a member of the web group
 usermod -a -G www-data $USERNAME
 
+# Enable our dev site
+a2ensite vagrant
+
 # Restart everything
 service apache2 restart
 service mysql restart
 
-echo "To finish installing mysql, login to your vagrant box:\n\n"
-echo "    $ vagrant ssh\n\n"
-echo "And run:\n\n"
-echo "    $ mysql_install_db\n"
-echo "    $ mysql_secure_installation\n\n"
+# Mysql cleanup message
+echo ""
+echo "To finish installing mysql, login to your vagrant box:"
+echo "    $ vagrant ssh"
+echo "And run:"
+echo "    $ mysql_install_db"
+echo "    $ mysql_secure_installation"
+echo ""
+
+# Edit your local /etc/hosts file if you want
+echo ""
+echo "Add the following to your /etc/hosts file:"
+echo "192.168.33.10 vagrant.dev"
+echo "Visit `vagrant.dev` to see your project up and running"
+echo ""
 
 echo 'All setup!'
