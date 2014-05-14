@@ -1,5 +1,6 @@
 .vagrant
 wp-content/themes/twenty*
+*.sql
 
 *~
 .DS_Store
