@@ -2,6 +2,10 @@
 
 USERNAME=vagrant
 
+VAGRANT_DB_USER=root
+VAGRANT_DB_PASS=root
+VAGRANT_DB_NAME=vagrant
+
 # Some useful bash functions
 
 # install_pkgs $pkg_name
@@ -41,6 +45,11 @@ install_pkg build-essential python-setuptools python-dev zip \
 
 # install everything but the kitchen sink
 echo "Installing LAMP stack"
+
+# Set mysql root password
+debconf-set-selections <<< "mysql-server mysql-server/root_password password $VAGRANT_DB_PASS"
+debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $VAGRANT_DB_PASS"
+
 install_pkg apache2 mysql-server libapache2-mod-auth-mysql \
     php5-mysql php5 libapache2-mod-php5 php5-mcrypt
 
@@ -91,24 +100,19 @@ usermod -a -G www-data $USERNAME
 # Enable our dev site
 a2ensite vagrant
 
+# Create a new database for our site
+mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "create database $VAGRANT_DB_NAME;"
+mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "grant all privileges on *.* to '$VAGRANT_DB_USER'@'%' identified by '$VAGRANT_DB_PASS'";
+
 # Restart everything
 service apache2 restart
 service mysql restart
-
-# Mysql cleanup message
-echo ""
-echo "To finish installing mysql, login to your vagrant box:"
-echo "    $ vagrant ssh"
-echo "And run:"
-echo "    $ mysql_install_db"
-echo "    $ mysql_secure_installation"
-echo ""
 
 # Edit your local /etc/hosts file if you want
 echo ""
 echo "Add the following to your /etc/hosts file:"
 echo "192.168.33.10 vagrant.dev"
-echo "Visit `vagrant.dev` to see your project up and running"
+echo "Visit vagrant.dev to see your project up and running"
 echo ""
 
 echo 'All setup!'
