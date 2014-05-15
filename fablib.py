@@ -156,23 +156,23 @@ def search_replace_domain(dump=None, search=None, replacement="vagrant.dev"):
     local('cat %s | sed s/%s/%s/g > prepared.sql' % (dump, search, replacement))
 
 
-def create_vagrant_db(name="vagrant"):
+def create_vagrant_db(name=None):
     """
     Create a new database on your vagrant instance
     """
-    env.vagrant_db_name = name
+    env.vagrant_db_name = name or env.project_name
 
     print(colors.cyan("Creating database: %(vagrant_db_name)s" % env))
     local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "create database %(vagrant_db_name)s;"' % env)
     print(colors.green('Finished creating database!'))
 
 
-def destroy_vagrant_db(name="vagrant"):
+def destroy_vagrant_db(name=None):
     """
     Drop a database on your vagrant instance
     """
     if confirm(colors.red("Are you sure you want to destroy database: %s") % name):
-        env.vagrant_db_name = name
+        env.vagrant_db_name = name or env.project_name
 
         print(colors.red("Destroying database: %(vagrant_db_name)s" % env))
         local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "drop database %(vagrant_db_name)s;"' % env)
@@ -182,12 +182,12 @@ def destroy_vagrant_db(name="vagrant"):
         exit()
 
 
-def load_vagrant_db(dump=None, name="vagrant"):
+def load_vagrant_db(dump=None, name=None):
     """
     Connects to your vagrant instance and loads the `vagrant` database with specified dump file
     """
     if dump:
-        env.vagrant_db_name = name
+        env.vagrant_db_name = name or env.project_name
         env.vagrant_dump_file = os.path.expanduser(dump)
 
         print(colors.cyan("Loading database..."))
@@ -198,13 +198,14 @@ def load_vagrant_db(dump=None, name="vagrant"):
         exit()
 
 
-def reload_vagrant_db(dump=None, name="vagrant"):
+def reload_vagrant_db(dump=None, name=None):
     """
     Destroy, create and load a database on your vagrant instance
     """
-    destroy_vagrant_db(name)
-    create_vagrant_db(name)
-    load_vagrant_db(dump, name)
+    env.vagrant_db_name = name or env.project_name
+    destroy_vagrant_db(env.vagrant_db_name)
+    create_vagrant_db(env.vagrant_db_name)
+    load_vagrant_db(dump, env.vagrant_db_name)
 
 
 # Utilities

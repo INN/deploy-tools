@@ -4,7 +4,6 @@ USERNAME=vagrant
 
 VAGRANT_DB_USER=root
 VAGRANT_DB_PASS=root
-VAGRANT_DB_NAME=vagrant
 
 # Some useful bash functions
 
@@ -103,8 +102,7 @@ a2ensite vagrant
 # Make sure Apache's rewrite module is enabled
 a2enmod rewrite
 
-# Create a new database for our site
-mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "create database $VAGRANT_DB_NAME;"
+# Set mysql root user permissions
 mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "grant all privileges on *.* to '$VAGRANT_DB_USER'@'%' identified by '$VAGRANT_DB_PASS'";
 
 # Restart everything

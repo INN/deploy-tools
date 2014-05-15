@@ -86,9 +86,7 @@ Once you've done that, you should be able to visit [http://vagrant.dev](http://v
 A couple notes:
 
 - The Apache configuration for our Vagrant box uses the root directory of your project as the www root for vagrant.dev.
-- Our provisioning script installs mysql and does the following:
-    - Sets a password for the root user with value 'root'.
-    - Creates an empty database called 'vagrant' which you can use for local development.
+- Our provisioning script installs mysql and sets a password for the root user with value 'root'.
 
 ### Installing and/or upgrading WordPress
 
