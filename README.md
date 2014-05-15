@@ -42,6 +42,8 @@ Then:
     $ workon projectnamegoeshere
     $ pip install -r requirements.txt
     $ fab verify_prerequisites
+    
+If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to acquire a version of curl that does support it. For OSX users, the verificatino script used brew to take care of that problem. For users of other operating systems, check your online support communities. 
 
 Now edit the `fabfile.py` and adjust the settings for your project.
 
@@ -71,11 +73,11 @@ To switch to a different branch and deploy
 
 The examples directory also includes a `Vagrantfile`, a bunch of config files for Apache, PHP, MySQL and a `boot-script.sh` for provisioning a Vagrant instance for local development.
 
-Assuming you have VirtualBox and Vagrant installed, start the Vagrant box with:
+Assuming you have VirtualBox and Vagrant installed, and enough spare disk space, start the Vagrant box with:
 
     $ vagrant up
 
-It should take about ten minutes to complete the provisioning process.
+It should take about ten minutes to complete the provisioning process, depending on your internet connection speed. 
 
 When the Vagrant box is ready, you'll want to edit your `/etc/hosts` file (i.e. not the `hosts` file on the Vagrant box), adding:
 
