@@ -88,16 +88,16 @@ def deploy():
 
 def verify_prerequisites():
     """
-    Checks to make sure you have curl (with ssh) and git-ftp installed, installs them if you do not.
+    Checks to make sure you have curl (with ssh) and git-ftp installed, Attempts installation via brew if you do not.
     """
     with settings(warn_only=True):
         local('brew update')
 
-        print(colors.cyan("Verifying your installation of curl..."))
+        print(colors.cyan("Verifying your installation of curl supports sftp..."))
         ret = local('curl -V | grep sftp', capture=True)
         if ret.return_code == 1:
             print(colors.yellow(
-                'Your version of curl does not support sftp. Installing curl with sftp support via brew...'))
+                'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
             local('brew install curl --with-ssh')
             local('brew link --force curl')
         else:
@@ -107,7 +107,7 @@ def verify_prerequisites():
         ret = local('git ftp --version', capture=True)
         if ret.return_code == 1:
             print(colors.yellow(
-                'You don not have git-ftp installed. Installing...'))
+                'You do not have git-ftp installed. Attempting installation via brew...'))
             local('brew install git-ftp')
         else:
             print(colors.green('You have git-ftp installed!'))
@@ -133,7 +133,7 @@ def upgrade_wordpress(tag):
             print(colors.cyan('Unzipping...'))
             local('unzip %s.zip' % tag)
 
-            print(colors.cyan('Copying new files to our project directory'))
+            print(colors.cyan('Copying new files to our project directory...'))
             local('rsync -ru WordPress-%s/* .' % tag)
         finally:
             print(colors.cyan('Cleaning up...'))
