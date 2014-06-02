@@ -2,58 +2,8 @@ import os
 
 from fabric.api import *
 from fabric import colors
-from fabric.contrib.console import confirm
 
 from StringIO import StringIO
-
-# Deployment related
-env.path = ''
-env.dry_run = False
-
-def stable():
-    """
-    Work on stable branch.
-    """
-    print(colors.green('On stable'))
-    env.branch = 'stable'
-
-
-def master():
-    """
-    Work on development branch.
-    """
-    print(colors.yellow('On master'))
-    env.branch = 'master'
-
-
-def branch(branch_name):
-    """
-    Work on any specified branch.
-    """
-    print(colors.red('On %s' % branch_name))
-    env.branch = branch_name
-
-
-def rollback():
-    """
-    Deploy the most recent rollback point.
-    """
-    print(colors.red('Rolling back last deploy'))
-    env.branch = 'rollback'
-
-
-def path(path):
-    """
-    Specify the project's path on remote server.
-    """
-    env.path = path
-
-
-def dry_run():
-    """
-    Don't transfer files, just output what would happen during a real deployment.
-    """
-    env.dry_run = True
 
 
 def deploy():
@@ -91,13 +41,13 @@ def verify_prerequisites():
     Checks to make sure you have curl (with ssh) and git-ftp installed, Attempts installation via brew if you do not.
     """
     with settings(warn_only=True):
-        local('brew update')
 
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
         ret = local('curl -V | grep sftp', capture=True)
         if ret.return_code == 1:
             print(colors.yellow(
                 'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
+            local('brew update')
             local('brew install curl --with-ssh')
             local('brew link --force curl')
         else:
@@ -108,6 +58,7 @@ def verify_prerequisites():
         if ret.return_code == 1:
             print(colors.yellow(
                 'You do not have git-ftp installed. Attempting installation via brew...'))
+            local('brew update')
             local('brew install git-ftp')
         else:
             print(colors.green('You have git-ftp installed!'))
@@ -115,12 +66,7 @@ def verify_prerequisites():
         print(colors.green('Your system is ready to deploy code!'))
 
 
-# Local development helpers
-env.vagrant_host = '192.168.33.10'
-env.vagrant_db_user = 'root'
-env.vagrant_db_pass = 'root'
-
-def upgrade_wordpress(tag):
+def install_wordpress(tag):
     """
     Downloads specified version of WordPress from https://github.com/WordPress/WordPress and
     installs it.
@@ -141,71 +87,6 @@ def upgrade_wordpress(tag):
             local('rm -Rf WordPress-%s' % tag)
 
         print(colors.cyan('Finished upgrading WordPress!'))
-
-
-def search_replace_domain(dump=None, search=None, replacement="vagrant.dev"):
-    """
-    Search for and replace domain in a WordPress database dump
-
-    Example:
-
-        $ fab search_replace_domain:dump.sql,"inndev.wpengine.com"
-    """
-    dump = os.path.expanduser(dump)
-    print(colors.cyan('Cleaning sql file. Searching for: %s, replacing with: %s' % (search, replacement)))
-    local('cat %s | sed s/%s/%s/g > prepared.sql' % (dump, search, replacement))
-
-
-def create_vagrant_db(name=None):
-    """
-    Create a new database on your vagrant instance
-    """
-    env.vagrant_db_name = name or env.project_name
-
-    print(colors.cyan("Creating database: %(vagrant_db_name)s" % env))
-    local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "create database %(vagrant_db_name)s;"' % env)
-    print(colors.green('Finished creating database!'))
-
-
-def destroy_vagrant_db(name=None):
-    """
-    Drop a database on your vagrant instance
-    """
-    if confirm(colors.red("Are you sure you want to destroy database: %s") % name):
-        env.vagrant_db_name = name or env.project_name
-
-        print(colors.red("Destroying database: %(vagrant_db_name)s" % env))
-        local('mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s -e "drop database %(vagrant_db_name)s;"' % env)
-        print(colors.green('Finished destroying database!'))
-    else:
-        print(colors.cyan("Exiting..."))
-        exit()
-
-
-def load_vagrant_db(dump=None, name=None):
-    """
-    Connects to your vagrant instance and loads the `vagrant` database with specified dump file
-    """
-    if dump:
-        env.vagrant_db_name = name or env.project_name
-        env.vagrant_dump_file = os.path.expanduser(dump)
-
-        print(colors.cyan("Loading database..."))
-        local('cat %(vagrant_dump_file)s | mysql -s --host=%(vagrant_host)s --user=%(vagrant_db_user)s --password=%(vagrant_db_pass)s %(vagrant_db_name)s' % env)
-        print(colors.green('Finished loading database!'))
-    else:
-        print(colors.yellow('Please specify which database file to load!'))
-        exit()
-
-
-def reload_vagrant_db(dump=None, name=None):
-    """
-    Destroy, create and load a database on your vagrant instance
-    """
-    env.vagrant_db_name = name or env.project_name
-    destroy_vagrant_db(env.vagrant_db_name)
-    create_vagrant_db(env.vagrant_db_name)
-    load_vagrant_db(dump, env.vagrant_db_name)
 
 
 def fetch_sql_dump():
