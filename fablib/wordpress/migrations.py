@@ -11,6 +11,11 @@ from getpass import getpass
 
 from ..local import *
 
+MULTISITE_TABLES = ['wp_users', 'wp_usermeta', ]
+BLOG_TABLES = [
+    'wp_%s_commentmeta', 'wp_%s_comments', 'wp_%s_links', 'wp_%s_options', 'wp_%s_postmeta',
+    'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
+
 SQL_CLEANUP_SINGLE_BLOG = """
 alter table wp_users add spam TINYINT(2);
 alter table wp_users add deleted TINYINT(2);
@@ -50,13 +55,13 @@ def single_to_multisite_migration():
     env.password = env.single_blog_pass
 
     print(colors.cyan("\nDownloading recent database backup for blog: %(single_blog_name)s\n" % env))
-    get('wp-content/mysql.sql', 'single_blog.sql')
+    get('wp-content/mysql.sql', 'mysql.sql')
 
     print(colors.cyan("(Re-)Loading database backup on localhost..."))
     with settings(warn_only=True):
         local_destroy_db(env.single_blog_name)
         local_create_db(env.single_blog_name)
-        local_load_db('single_blog.sql', env.single_blog_name)
+        local_load_db('mysql.sql', env.single_blog_name)
 
     print("\n2. We'll need to make sure our single blog's user ID's\n"
         "are migrated so that they are outside the range of existing\n"
@@ -85,7 +90,6 @@ def single_to_multisite_migration():
 
     SQL = SQL_CLEANUP_SINGLE_BLOG % env
 
-    # TODO: Don't do this to wp_users and wp_usermeta
     print(colors.cyan("Getting list of tables to be renamed...\n"))
     result = local(
         'mysql -u %(local_db_user)s -p%(local_db_pass)s -N -B -e "select TABLE_NAME from information_schema.tables ' \
@@ -94,7 +98,7 @@ def single_to_multisite_migration():
     tables = result.splitlines()
 
     # We don't want to rename wp_users or wp_usermeta
-    for exclude in ['wp_users', 'wp_usermeta', ]:
+    for exclude in MULTISITE_TABLES:
         tables.pop(tables.index(exclude))
 
     for tablename in tables:
@@ -113,9 +117,26 @@ def single_to_multisite_migration():
             'mysql -u %(local_db_user)s -p%(local_db_pass)s ' \
             '%(single_blog_name)s < migration.sql 2>/dev/null' % env)
 
-        if confirm("\n5. Dump the migrated database?"):
-            local('rm migration.sql')
+        if confirm("\n5. Create migration files?"):
+            print(colors.cyan("\nCreating migration file for network tables (wp_users, wp_usermeta)...\n"))
+            env.network_tables_string = ' '.join(MULTISITE_TABLES)
             local('mysqldump -u %(local_db_user)s -p%(local_db_pass)s ' \
-                '%(single_blog_name)s > migrated.sql 2>/dev/null' % env)
+                '--skip-triggers --compact --no-create-info ' \
+                '%(single_blog_name)s %(network_tables_string)s > ' \
+                'network_tables_migration.sql 2>/dev/null' % env)
+
+            print(colors.cyan("Creating migration file for the migrated blog...\n"))
+            env.blog_tables_string = ' '.join([table % env.new_blog_id for table in BLOG_TABLES])
+            local('mysqldump -u %(local_db_user)s -p%(local_db_pass)s ' \
+                '%(single_blog_name)s %(blog_tables_string)s > ' \
+                'blog_tables_migration.sql 2>/dev/null' % env)
+
+            print(colors.green(
+                "\nUse network_tables_migration.sql and blog_tables_migration.sql to migrate your multisite database!\n"))
+
+        print("Cleaning up...\n")
+        local('rm migration.sql mysql.sql')
     else:
         print(colors.cyan("\nOutput SQL statements to: migration.sql"))
+        print("Cleaning up...\n")
+        local('rm mysql.sql')
