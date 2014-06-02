@@ -208,6 +208,14 @@ def reload_vagrant_db(dump=None, name=None):
     load_vagrant_db(dump, env.vagrant_db_name)
 
 
+def fetch_sql_dump():
+    """
+    Gets the latest mysql.sql dump for your site from WPEngine.
+    """
+    print(colors.cyan("Fetching sql dump. This may take a while..."))
+    get('wp-content/mysql.sql', 'mysql.sql')
+
+
 # Utilities
 def _initial_deploy(dest_path):
     if env.dry_run:
