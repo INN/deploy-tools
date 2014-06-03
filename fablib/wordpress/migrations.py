@@ -17,8 +17,8 @@ BLOG_TABLES = [
     'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
 
 SQL_CLEANUP_SINGLE_BLOG = """
-alter table wp_users add spam TINYINT(2);
-alter table wp_users add deleted TINYINT(2);
+alter table wp_users add spam tinyint(2);
+alter table wp_users add deleted tinyint(2);
 set @newID = %(new_start_id)s;
 update wp_users set ID = ID + @newID;
 update wp_usermeta set user_id = user_id + @newID;
@@ -117,7 +117,7 @@ def single_to_multisite_migration():
             'mysql -u %(local_db_user)s -p%(local_db_pass)s ' \
             '%(single_blog_name)s < migration.sql 2>/dev/null' % env)
 
-        if confirm("\n5. Create migration files?"):
+        if confirm("\n5. Create migration files to apply to multisite database?"):
             print(colors.cyan("\nCreating migration file for network tables (wp_users, wp_usermeta)...\n"))
             env.network_tables_string = ' '.join(MULTISITE_TABLES)
             local('mysqldump -u %(local_db_user)s -p%(local_db_pass)s ' \
