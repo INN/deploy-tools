@@ -54,6 +54,6 @@ def local_reload_db(dump=None, name=None):
     Destroy, create and load a database on localhost
     """
     env.local_db_name = name or env.project_name
-    destroy_local_db(env.local_db_name)
-    create_local_db(env.local_db_name)
-    load_local_db(dump, env.local_db_name)
+    local_destroy_db(env.local_db_name)
+    local_create_db(env.local_db_name)
+    local_load_db(dump, env.local_db_name)

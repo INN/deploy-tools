@@ -59,6 +59,6 @@ def vagrant_reload_db(dump=None, name=None):
     Destroy, create and load a database on your vagrant instance
     """
     env.vagrant_db_name = name or env.project_name
-    destroy_vagrant_db(env.vagrant_db_name)
-    create_vagrant_db(env.vagrant_db_name)
-    load_vagrant_db(dump, env.vagrant_db_name)
+    vagrant_destroy_db(env.vagrant_db_name)
+    vagrant_create_db(env.vagrant_db_name)
+    vagrant_load_db(dump, env.vagrant_db_name)
