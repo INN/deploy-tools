@@ -42,7 +42,7 @@ Then:
     $ workon projectnamegoeshere
     $ pip install -r requirements.txt
     $ fab verify_prerequisites
-    
+
 If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script used brew to take care of that problem. For users of other operating systems, check your online support communities. 
 
 Now edit the `fabfile.py` and adjust the settings for your project.
@@ -94,7 +94,7 @@ A couple notes:
 
 In setting up your dev environment, you'll want to pull in all the necessary WordPress files if they are not included in the project repository. To do this, use the command:
 
-    $ fab upgrade_wordpress:"3.9.1"
+    $ fab install_wordpress:"3.9.1"
 
 Where "3.9.1" identifies the [tagged version of the WordPress repository](https://github.com/WordPress/WordPress/tags) that you want to use.
 
