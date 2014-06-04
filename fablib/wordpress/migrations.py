@@ -17,8 +17,8 @@ BLOG_TABLES = [
     'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
 
 SQL_CLEANUP_SINGLE_BLOG = """
-alter table wp_users add spam tinyint(2);
-alter table wp_users add deleted tinyint(2);
+alter table wp_users add spam tinyint(2) default 0;
+alter table wp_users add deleted tinyint(2) default 0;
 set @newID = %(new_start_id)s;
 update wp_users set ID = ID + @newID;
 update wp_usermeta set user_id = user_id + @newID;
