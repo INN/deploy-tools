@@ -107,10 +107,9 @@ def _dump_tables():
         content = """set @newUmetaID = (select max(umeta_id) from wp_usermeta);
         set @newUserID = (select max(ID) from wp_users);""" + content
 
-        # Also preserve the siteurl, home, upload_url_path of the blog you just created in the multisite database
+        # Also preserve the siteurl, home of the blog you just created in the multisite database
         content = ("""set @siteUrl = (select option_value from wp_%(new_blog_id)s_options where option_name = 'siteurl');
-        set @homeVal = (select option_value from wp_%(new_blog_id)s_options where option_name = 'home');
-        set @uploadUrlPath = (select option_value from wp_%(new_blog_id)s_options where option_name = 'upload_url_path');""" % env) + content
+        set @homeVal = (select option_value from wp_%(new_blog_id)s_options where option_name = 'home');""" % env) + content
 
         # Once we've imported all of the content, go back and make sure all of the user IDs
         # in comments and posts tables are set properly.
@@ -120,7 +119,7 @@ def _dump_tables():
         # Also restore values in the options table
         content = content + """update wp_%(new_blog_id)s_options set option_value = @siteUrl where option_name = 'siteurl';
         update wp_%(new_blog_id)s_options set option_value = @homeVal where option_name = 'home';
-        update wp_%(new_blog_id)s_options set option_value = @uploadUrlPath where option_name = 'upload_url_path';""" % env
+        update wp_%(new_blog_id)s_options set option_value = "wp-content/blogs.dir/%(new_blog_id)s/files" where option_name = 'upload_path';""" % env
 
         # Finally, rename option 'wp_user_roles' to 'wp_%(new_blog_id)s_user_roles'
         content = content + """update wp_%(new_blog_id)s_options set option_name = 'wp_%(new_blog_id)s_user_roles' where option_name = 'wp_user_roles';""" % env
