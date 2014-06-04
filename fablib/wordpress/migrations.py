@@ -69,30 +69,22 @@ def single_to_multisite_migration():
     SQL = SQL_CLEANUP_SINGLE_BLOG % env
     SQL = SQL + _generate_rename_tables_sql()
 
-    print("\nWe're ready to run the migration against your local copy of the single blog's database.\n")
+    print("\n3. Finally, we'll create a migration file to apply to your multisite database...\n")
 
-    if confirm("3. Proceed with the migration? "):
-        print(colors.cyan("\nMigrating local copy of database...\n"))
+    # Store SQL for altering the single blog's db in migration.sql
+    with open('migration.sql', 'w+') as f:
+        f.write(SQL)
 
-        with open('migration.sql', 'w+') as f:
-            f.write(SQL)
+    # Run migration.sql against the single blog's db
+    local('mysql -u %(local_db_user)s -p%(local_db_pass)s %(single_blog_name)s < migration.sql 2>/dev/null' % env)
 
-        result = local(
-            'mysql -u %(local_db_user)s -p%(local_db_pass)s ' \
-            '%(single_blog_name)s < migration.sql 2>/dev/null' % env)
+    # Dump the single blog's tables to a multisite_migration.sql file to apply to your multisite db
+    _dump_tables()
 
-        if confirm("\n4. Create migration files to apply to multisite database?"):
-            _dump_tables()
+    print(colors.green("\nUse multisite_migration.sql to migrate your multisite database!\n"))
 
-            print(colors.green(
-                "\nUse multisite_migration.sql to migrate your multisite database!\n"))
-
-        print("Cleaning up...\n")
-        local('rm migration.sql mysql.sql')
-    else:
-        print(colors.cyan("\nOutput SQL statements to: migration.sql"))
-        print("Cleaning up...\n")
-        local('rm mysql.sql')
+    print("Cleaning up...\n")
+    local('rm migration.sql mysql.sql')
 
 
 def _dump_tables():
