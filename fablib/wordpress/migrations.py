@@ -81,7 +81,7 @@ def single_to_multisite_migration():
             'mysql -u %(local_db_user)s -p%(local_db_pass)s ' \
             '%(single_blog_name)s < migration.sql 2>/dev/null' % env)
 
-        if confirm("\n5. Create migration files to apply to multisite database?"):
+        if confirm("\n4. Create migration files to apply to multisite database?"):
             _dump_tables()
 
             print(colors.green(
