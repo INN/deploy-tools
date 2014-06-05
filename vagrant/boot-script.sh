@@ -105,6 +105,11 @@ a2enmod rewrite
 # Set mysql root user permissions
 mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "grant all privileges on *.* to '$VAGRANT_DB_USER'@'%' identified by '$VAGRANT_DB_PASS'";
 
+# Install WP CLI
+curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+chmod +x wp-cli.phar
+mv wp-cli.phar /usr/local/bin/wp
+
 # Restart everything
 service apache2 restart
 service mysql restart
