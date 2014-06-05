@@ -1,3 +1,4 @@
+local_fabfile.py
 .vagrant
 wp-content/themes/twenty*
 *.sql
