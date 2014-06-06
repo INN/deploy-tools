@@ -7,7 +7,7 @@ from fabric import colors
 from fabric.contrib.console import confirm
 from fabric.operations import prompt
 
-from getpass import getpass
+from getpass import getpass as _getpass
 
 from ..local import *
 
@@ -42,7 +42,7 @@ def single_to_multisite_migration():
     env.single_blog_name = prompt("Name of single blog (e.g. 'myblog'): ")
     env.single_blog_host = prompt("FTP host of single blog: ")
     env.single_blog_user = prompt("FTP user name: ")
-    env.single_blog_pass = getpass("FTP user password: ")
+    env.single_blog_pass = _getpass("FTP user password: ")
 
     env.hosts = [env.single_blog_host, ]
     env.host_string = env.single_blog_host

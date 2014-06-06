@@ -7,7 +7,7 @@ from local import *
 from vagrant import *
 from wordpress import *
 from wordpress.migrations import *
-from helpers import *
+from helpers import _search_replace as search_replace
 
 # Deployment related
 env.path = ''
