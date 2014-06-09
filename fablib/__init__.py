@@ -5,7 +5,7 @@ from fabric import colors
 
 from local import *
 from vagrant import *
-from wordpress import *
+from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, deploy as _wp_deploy
 from wordpress.migrations import *
 from helpers import _search_replace as search_replace
 
@@ -57,3 +57,10 @@ def dry_run():
     Don't transfer files, just output what would happen during a real deployment.
     """
     env.dry_run = True
+
+def deploy():
+    """
+    Deploy local copy of repository to target environment.
+    """
+    require('branch', provided_by=[master, stable, branch, ])
+    _wp_deploy()

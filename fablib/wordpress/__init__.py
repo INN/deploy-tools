@@ -8,10 +8,9 @@ from StringIO import StringIO
 
 def deploy():
     """
-    Deploy local copy of repository to target environment.
+    Deploy local copy of repository to target WP Engine environment.
     """
     require('settings', provided_by=["production", "staging", ])
-    require('branch', provided_by=[master, stable, branch, ])
 
     if env.branch != 'rollback':
         rollback_sha1 = _get_rollback_sha1()
