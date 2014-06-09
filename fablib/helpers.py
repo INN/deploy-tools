@@ -103,6 +103,6 @@ def _reload_db(dump=None, name=None, host=None, user=None, password=None):
     """
     Destroy, create and load a database
     """
-    destroy_db(name or env.project_name, host, user, password)
-    create_db(name or env.project_name, host, user, password)
-    load_db(dump, name or env.project_name, host, user, password)
+    _destroy_db(name or env.project_name, host, user, password)
+    _create_db(name or env.project_name, host, user, password)
+    _load_db(dump, name or env.project_name, host, user, password)
