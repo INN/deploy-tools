@@ -69,7 +69,9 @@ To switch to a different branch and deploy
 
     $ fab staging branch:newfeaturebranchname deploy
 
-### Local development with Vagrant
+### Local development
+
+#### The Basics
 
 The examples directory also includes a `Vagrantfile`, a bunch of config files for Apache, PHP, MySQL and a `boot-script.sh` for provisioning a Vagrant instance for local development.
 
@@ -89,6 +91,10 @@ A couple notes:
 
 - The Apache configuration for our Vagrant box uses the root directory of your project as the www root for vagrant.dev.
 - Our provisioning script installs mysql and sets a password for the root user with value 'root'.
+
+#### Database commands
+
+These tools include a few commands to ease database setup and manipulation. [Read about them here](https://github.com/INN/deploy-tools/blob/documentation/COMMANDS.md).
 
 ### Installing and/or upgrading WordPress
 
