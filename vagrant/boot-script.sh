@@ -40,7 +40,8 @@ install_pkg build-essential python-setuptools python-dev zip \
     virtualenvwrapper libxml2-dev libxslt-dev libgeos-dev \
     libpq-dev postgresql-client mysql-client libmysqlclient-dev \
     runit proj libfreetype6-dev libjpeg-dev zlib1g-dev \
-    libgdal1-dev vim curl python-software-properties
+    libgdal1-dev vim curl python-software-properties memcached \
+    php-pear
 
 # install everything but the kitchen sink
 echo "Installing LAMP stack"
@@ -50,7 +51,11 @@ debconf-set-selections <<< "mysql-server mysql-server/root_password password $VA
 debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $VAGRANT_DB_PASS"
 
 install_pkg apache2 mysql-server libapache2-mod-auth-mysql \
-    php5-mysql php5 libapache2-mod-php5 php5-mcrypt
+    php5-mysql php5 libapache2-mod-php5 php5-mcrypt php5-memcache
+
+# Install memcached php extension
+yes '' | pecl install memcached
+echo "extension=memcache.so" | tee /etc/php5/conf.d/memcache.ini
 
 # Make PIL build correctly
 ln -s /usr/lib/x86_64-linux-gnu/libfreetype.so /usr/lib/
