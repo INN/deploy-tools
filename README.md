@@ -43,7 +43,7 @@ Then:
     $ pip install -r requirements.txt
     $ fab verify_prerequisites
 
-If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script used brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/). 
+If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script uses brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/). 
 
 Now edit the `fabfile.py` and adjust the settings for your project.
 
@@ -106,4 +106,4 @@ Where "3.9.1" identifies the [tagged version of the WordPress repository](https:
 
 Fabric will download the release .zip file from Github and extract its contents to the project root.
 
-The `gitignore` file included in the examples directory is a good starter for WordPress projects destined for deployment to WPEngine. It will help keep your project repo tidy by ignoring all WordPress core files that are unnecessary for deployment. Smply rename it to `.gitignore` to use it. 
+The `gitignore` file included in the examples directory is a good starter for WordPress projects destined for deployment to WPEngine. It will help keep your project repo tidy by ignoring all WordPress core files that are unnecessary for deployment. Simply rename it to `.gitignore` to use it. 
