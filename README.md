@@ -4,9 +4,9 @@ A box of tools for deploying INN's WordPress sites to WPEngine. Based on Chicago
 
 ## Prerequisites
 
-You'll need Python and pip to get started with these tools. Virtualenv and virtualenvwrapper are not required, but using them is a good practice.
+You'll need Python (versioins 2.5 to 2.7) and [pip](https://pip.pypa.io/en/latest/installing.html) to get started with these tools. [Virtualenv](https://virtualenv.pypa.io/en/latest/virtualenv.html) and [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/3.4) are not required, but using them is a good practice, so we'll use them here.
 
-Setup python dev environment
+Set up python dev environment:
 
     $ sudo easy_install pip
     $ sudo pip install virtualenv
@@ -43,7 +43,7 @@ Then:
     $ pip install -r requirements.txt
     $ fab verify_prerequisites
 
-If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script used brew to take care of that problem. For users of other operating systems, check your online support communities. 
+If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script used brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/). 
 
 Now edit the `fabfile.py` and adjust the settings for your project.
 
@@ -106,4 +106,4 @@ Where "3.9.1" identifies the [tagged version of the WordPress repository](https:
 
 Fabric will download the release .zip file from Github and extract its contents to the project root.
 
-The `gitignore` file included in the examples directory is a good starter for WordPress projects destined for deployment to WPEngine. It will help keep your project repo tidy by ignoring all WordPress core files that are unnecessary for deployment.
+The `gitignore` file included in the examples directory is a good starter for WordPress projects destined for deployment to WPEngine. It will help keep your project repo tidy by ignoring all WordPress core files that are unnecessary for deployment. Smply rename it to `.gitignore` to use it. 
