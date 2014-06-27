@@ -1,5 +1,7 @@
 # Included commands
 
+These commands are all `fab` commands, and are run by entering `fab command:option,anotheroption,yetanotheroption`. For more information on Fabric, [see the official docs](http://docs.fabfile.org/en/1.9/tutorial.html).
+
 ## Database commands
 
 ### For MySQL on Vagrant

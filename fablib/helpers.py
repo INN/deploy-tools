@@ -95,7 +95,7 @@ def _dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
     env.dump_file = os.path.expanduser(dump)
 
     print(colors.cyan('Dumping database: %(db_name)s' % env))
-    local('mysqldump -h %(db_host)s -u %(db_user)s -p%(db_pass)s --quick %(db_name)s > %(dump_file)s' % env)
+    local('mysqldump -h %(db_host)s -u %(db_user)s -p%(db_pass)s --quick %(db_name)s > %(dump_file)s' % env) # Having no space between -p and the password is correct. See man 1 mysql. 
     print(colors.green('Finished dumping database!'))
 
 
