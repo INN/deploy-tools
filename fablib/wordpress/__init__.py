@@ -44,11 +44,17 @@ def verify_prerequisites():
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
         ret = local('curl -V | grep sftp', capture=True)
         if ret.return_code == 1:
-            print(colors.yellow(
-                'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
-            local('brew update')
-            local('brew install curl --with-ssh')
-            local('brew link --force curl')
+            import sys
+            if sys.platform.startswith('darwin'):
+                print(colors.yellow(
+                    'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
+                local('brew update')
+                local('brew install curl --with-ssh')
+                local('brew link --force curl')
+            else:
+                print(colors.red(
+                    'Your version of curl does not support sftp. You may have to recompile it with sftp support. See the deploy-tools README for more information.'
+                ))
         else:
             print(colors.green('Your installation of curl supports sftp!'))
 
