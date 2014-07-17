@@ -1,5 +1,6 @@
 import json
 
+from fabric.api import *
 from urllib import urlopen, urlencode
 
 
