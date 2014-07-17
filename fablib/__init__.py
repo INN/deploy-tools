@@ -7,6 +7,7 @@ from local import *
 from vagrant import *
 from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, deploy as _wp_deploy
 from wordpress.migrations import *
+from hipchat import HipChatNotifier, notify_hipchat as _notify_hipchat
 from helpers import _search_replace as search_replace
 
 # Deployment related
@@ -58,9 +59,12 @@ def dry_run():
     """
     env.dry_run = True
 
+
 def deploy():
     """
     Deploy local copy of repository to target environment.
     """
     require('branch', provided_by=[master, stable, branch, ])
     _wp_deploy()
+    _notify_hipchat()
+

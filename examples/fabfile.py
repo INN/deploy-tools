@@ -6,6 +6,12 @@ Base configuration
 env.project_name = ''
 env.file_path = '.'
 
+"""
+Add HipChat info to send a message to a room when new code has been deployed.
+"""
+env.hipchat_token = ''
+env.hipchat_room_id = ''
+
 # Environments
 def production():
     """
