@@ -33,6 +33,7 @@ class HipChatNotifier:
         ret = urlopen(url, urlencode(data))
         return json.loads(ret.read())
 
+
 def notify_hipchat():
     if env.hipchat_token and env.hipchat_room_id and not env.dry_run:
         hp = HipChatNotifier(env.hipchat_token)
