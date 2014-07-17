@@ -7,7 +7,7 @@ from local import *
 from vagrant import *
 from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, deploy as _wp_deploy
 from wordpress.migrations import *
-from hipchat import HipChatNotifier, notify_hipchat as _notify_hipchat
+from hipchat import notify_hipchat as _notify_hipchat
 from helpers import _search_replace as search_replace
 
 # Deployment related
