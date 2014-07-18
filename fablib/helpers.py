@@ -28,6 +28,8 @@ def _create_db(name=None, host=None, user=None, password=None):
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
+    _require_env_var('project_name')
+
     env.db_host = host
     env.db_user = user
     env.db_pass = password
@@ -44,6 +46,8 @@ def _destroy_db(name=None, host=None, user=None, password=None):
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
+
+    _require_env_var('project_name')
 
     if confirm(colors.red("Are you sure you want to destroy database: %s") % name):
         env.db_host = host
@@ -65,6 +69,8 @@ def _load_db(dump=None, name=None, host=None, user=None, password=None):
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
+
+    _require_env_var('project_name')
 
     if dump:
         env.db_host = host
@@ -88,6 +94,8 @@ def _dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
+    _require_env_var('project_name')
+
     env.db_host = host
     env.db_user = user
     env.db_pass = password
@@ -106,3 +114,16 @@ def _reload_db(dump=None, name=None, host=None, user=None, password=None):
     _destroy_db(name or env.project_name, host, user, password)
     _create_db(name or env.project_name, host, user, password)
     _load_db(dump, name or env.project_name, host, user, password)
+
+
+def _require_env_var(name):
+    """
+    Be sure that an env variable is defined and that it is not an empty string
+    """
+    error = ValueError('Required environment variable `project_name` can not be empty or None')
+    try:
+        ret = getattr(env, name)
+        if ret is '':
+            raise error
+    except AttributeError:
+        raise error
