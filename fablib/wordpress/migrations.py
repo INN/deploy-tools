@@ -1,5 +1,9 @@
+import MySQLdb
 import os
 import re
+import datetime
+
+from MySQLdb import ProgrammingError
 
 from fabric.api import *
 from fabric import colors
@@ -17,40 +21,38 @@ BLOG_TABLES = [
     'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
 
 SQL_CLEANUP_SINGLE_BLOG = """
-alter table wp_users add spam tinyint(2) default 0;
-alter table wp_users add deleted tinyint(2) default 0;
-update wp_usermeta set meta_key = 'wp_%(new_blog_id)s_user_level' where meta_key = 'wp_user_level';
-update wp_usermeta set meta_key = 'wp_%(new_blog_id)s_capabilities' where meta_key = 'wp_capabilities';
-update wp_posts set post_content = replace(
-post_content,
-'wp-content/uploads/',
-'wp-content/blogs.dir/%(new_blog_id)s/files/'
-);"""
+ALTER TABLE wp_users ADD spam tinyint(2) default 0;
+ALTER TABLE wp_users ADD deleted tinyint(2) default 0;
+UPDATE wp_usermeta SET meta_key = 'wp_%(new_blog_id)s_user_level' WHERE meta_key = 'wp_user_level';
+UPDATE wp_usermeta SET meta_key = 'wp_%(new_blog_id)s_capabilities' WHERE meta_key = 'wp_capabilities';
+UPDATE wp_posts SET post_content = replace(post_content, 'wp-content/uploads/', 'wp-content/blogs.dir/%(new_blog_id)s/files/');"""
 
-
-def single_to_multisite_migration():
+def single_to_multisite_migration(name=None, new_blog_id=None, ftp_host=None, ftp_user=None, ftp_pass=None):
     """
     Migrate a stand alone blog to an existing multisite instance
     """
     print("This script will help migrate a single WordPress blog to an existing\n"
         "WordPress multisite install by providing a SQL dump that you can\n"
-        "apply to your Multisite database. You'll need FTP login info for the\n"
-        "single blog. Let's get started...\n")
+        "apply to your Multisite database.")
+
+    if name:
+        env.single_blog_name = name
+    else:
+        raise Exception('A blog name is required')
 
     # Handle fetching and loading the single blog db in localhost mysql
-    print("1. Please provide...\n")
-    env.single_blog_name = prompt("Name of single blog (e.g. 'myblog'): ")
-    env.single_blog_host = prompt("FTP host of single blog: ")
-    env.single_blog_user = prompt("FTP user name: ")
-    env.single_blog_pass = _getpass("FTP user password: ")
+    if ftp_host and ftp_user and ftp_pass:
+        env.single_blog_host = ftp_host
+        env.single_blog_user = ftp_user
+        env.single_blog_pass = ftp_pass
 
-    env.hosts = [env.single_blog_host, ]
-    env.host_string = env.single_blog_host
-    env.user = env.single_blog_user
-    env.password = env.single_blog_pass
+        env.hosts = [env.single_blog_host, ]
+        env.host_string = env.single_blog_host
+        env.user = env.single_blog_user
+        env.password = env.single_blog_pass
 
-    print(colors.cyan("\nDownloading recent database backup for blog: %(single_blog_name)s\n" % env))
-    get('wp-content/mysql.sql', 'mysql.sql')
+        print(colors.cyan("\nDownloading recent database backup for blog: %(single_blog_name)s\n" % env))
+        get('wp-content/mysql.sql', 'mysql.sql')
 
     print(colors.cyan("(Re-)Loading database backup on localhost..."))
     with settings(warn_only=True):
@@ -58,82 +60,226 @@ def single_to_multisite_migration():
         local_create_db(env.single_blog_name)
         local_load_db('mysql.sql', env.single_blog_name)
 
-    print("\n2. Next, create a new blog in your multisite WordPress install \n"
-        "for the single blog that we are migrating.\n")
+    db = MySQLdb.connect(
+            host="localhost",
+            user=env.local_db_user,
+            passwd=env.local_db_pass,
+            db=env.single_blog_name
+        )
+    db.autocommit(True)
 
-    env.new_blog_id = prompt("\nLocate the newly created blog's ID and enter it here: ")
+    if new_blog_id:
+        env.new_blog_id = new_blog_id
+    else:
+        raise Exception('The ID of a newly-created multisite blog is required')
 
     print(colors.cyan("\nWe'll rename all of the single blog's tables to use "
         "the appropriate blog ID prefix based on the ID: wp_%s_\n" % env.new_blog_id))
 
     SQL = SQL_CLEANUP_SINGLE_BLOG % env
-    SQL = SQL + _generate_rename_tables_sql()
+    SQL = SQL + _generate_rename_tables_sql(db)
 
-    print("\n3. Finally, we'll create a migration file to apply to your multisite database...\n")
-
-    # Store SQL for altering the single blog's db in migration.sql
-    with open('migration.sql', 'w+') as f:
-        f.write(SQL)
-
-    # Run migration.sql against the single blog's db
-    local('mysql -u %(local_db_user)s -p%(local_db_pass)s %(single_blog_name)s < migration.sql 2>/dev/null' % env)
+    # Run `SQL` against the single blog's db
+    print(colors.cyan('Executing migration prep...'))
+    for sql in SQL.split(";"):
+        if sql.strip() != '':
+            print(colors.green(sql))
+            db.query(sql)
 
     # Dump the single blog's tables to a multisite_migration.sql file to apply to your multisite db
-    _dump_tables()
+    _dump_tables(db)
 
     print(colors.green("\nUse multisite_migration.sql to migrate your multisite database!\n"))
 
     print("Cleaning up...\n")
-    local('rm migration.sql mysql.sql')
+    try:
+        db.close()
+    except ProgrammingError:
+        pass
 
 
-def _dump_tables():
+def _dump_tables(db):
     print(colors.cyan("\nCreating migration file to apply to multisite database...\n"))
-    blog_tables_string = ' '.join([table % env.new_blog_id for table in BLOG_TABLES])
-    network_tables_string = ' '.join(NETWORK_TABLES)
-
-    env.tables_string = blog_tables_string + ' ' + network_tables_string
-
-    content = local('mysqldump -u %(local_db_user)s -p%(local_db_pass)s --skip-triggers --compact --replace ' \
-        '--no-create-info --skip-opt --single-transaction %(single_blog_name)s %(tables_string)s' % env, capture=True)
 
     with open('multisite_migration.sql', 'w+') as f:
-        # Set proper offsets for primary keys and user IDs throughout the dump
-        content = re.sub(r'`wp_users`\sVALUES\s\(', '`wp_users` VALUES (@newUserID +', content)
-        content = re.sub(r'`wp_usermeta`\sVALUES\s\((\d+),', r'`wp_usermeta` VALUES (\g<1>, @newUserID +', content)
-        content = re.sub(r'`wp_usermeta`\sVALUES\s\(', '`wp_usermeta` VALUES (@newUmetaID +', content)
+        # Create temporary tables to help avoid inserting duplicates in wp_users and wp_usermeta tables.
+        # Make sure we set the correct offset for user IDs
+        # Preserve the site_url and home values in the options table
+        content = """
+DROP TEMPORARY TABLE IF EXISTS existing_users;
+CREATE TEMPORARY TABLE IF NOT EXISTS existing_users SELECT ID, user_login FROM wp_users;
 
-        # Prepend values for new primary keys and user IDs to the dump
-        content = """set @newUmetaID = (select max(umeta_id) from wp_usermeta);
-        set @newUserID = (select max(ID) from wp_users);""" + content
+DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
+CREATE TEMPORARY TABLE IF NOT EXISTS existing_usermeta SELECT meta_value, umeta_id FROM wp_usermeta WHERE meta_key = 'nickname';
 
-        # Also preserve the siteurl, home of the blog you just created in the multisite database
-        content = ("""set @siteUrl = (select option_value from wp_%(new_blog_id)s_options where option_name = 'siteurl');
-        set @homeVal = (select option_value from wp_%(new_blog_id)s_options where option_name = 'home');""" % env) + content
+SET @newUmetaID = (SELECT max(umeta_id) FROM wp_usermeta);
+SET @newUserID = (SELECT max(ID) FROM wp_users);
+SET @siteUrl = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option_name = 'siteurl');
+SET @homeVal = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option_name = 'home');
+    """ % env
 
-        # Once we've imported all of the content, go back and make sure all of the user IDs
-        # in comments and posts tables are set properly.
-        content = content + """update wp_%(new_blog_id)s_posts set post_author = post_author + @newUserID;
-        update wp_%(new_blog_id)s_comments set user_id = user_id + @newUserID;""" % env
+        for table in BLOG_TABLES:
+            table = table % env.new_blog_id
+            query = "select * from %s;"  % (table, );
+            db.query(query)
+            result = db.store_result()
+            for idx in xrange(0, result.num_rows()):
+                row = result.fetch_row(1, 1)
+                data = row[0]
+                values = []
+                for key, value in data.iteritems():
+                    if type(value) == str:
+                        values.append("%s='%s'" % (key, db.escape_string(value)))
+                    elif type(value) == datetime.datetime:
+                        values.append("%s='%s'" % (key, value))
+                    elif value is None:
+                        pass
+                    else:
+                        values.append("%s=%s" % (key, value))
+
+                values_str = ', '.join([value for value in values])
+                content = content + "REPLACE INTO %s SET %s;\n" % (table, values_str)
+
+        for table in NETWORK_TABLES:
+            query = "select * from %s;"  % (table, )
+            db.query(query)
+            result = db.store_result()
+
+            table_desc = result.describe()
+            column_names = [column[0] for column in table_desc]
+            column_names_str = ', '.join(column_names)
+
+            for idx in xrange(0, result.num_rows()):
+                row = result.fetch_row(1, 1)
+                data = row[0]
+                values = []
+
+                for key in column_names:
+                    try:
+                        value = data[key]
+                    except KeyError:
+                        value = None
+
+                    if key == 'umeta_id': # usermeta table
+                        old_umeta_id = value
+                        new_umeta_id = "@newUmetaID + %s" % (old_umeta_id,)
+                        values.append(new_umeta_id)
+                    elif key == 'ID': # users tables
+                        old_user_id = value
+                        new_user_id = "@newUserID + %s" % (old_user_id,)
+                        values.append(new_user_id)
+                    elif type(value) == str:
+                        values.append("'%s'" % (db.escape_string(value), ))
+                    elif type(value) == datetime.datetime:
+                        values.append("'%s'" % (value, ))
+                    elif value is None:
+                        values.append("NULL")
+                    else:
+                        values.append("%s" % (value, ))
+
+                values_str = ', '.join(values)
+
+                if table == 'wp_users':
+                    try:
+                        user_login = data['user_login']
+                    except KeyError:
+                        user_login = 'NULL'
+
+                    # If the user data hasn't been inserted, insert it.
+                    existing_user_query = "SELECT ID FROM existing_users WHERE user_login = '%s' LIMIT 1" % (user_login, )
+                    content = content + """
+SET @existingUser = (%s);
+INSERT INTO wp_users (%s)
+    SELECT %s
+    FROM DUAL WHERE NOT EXISTS (SELECT @existingUser AS existing_user);
+""" % (existing_user_query, column_names_str, values_str)
+
+                    # Update the posts table post_author value
+                    content = content + """
+UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (SELECT @existingUser AS existing_user) AND post_author = %s;
+""" % (env.new_blog_id, new_user_id, old_user_id)
+
+                    content = content + """
+UPDATE wp_%s_posts SET post_author = @existingUser WHERE EXISTS (SELECT @existingUser AS existing_user) AND post_author = %s;
+""" % (env.new_blog_id, old_user_id)
+
+                    # Update the comments table user_id value
+                    content = content + """
+UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (SELECT @existingUser AS existing_user) and user_ID = %s;
+""" % (env.new_blog_id, new_user_id, old_user_id)
+
+                    content = content + """
+UPDATE wp_%s_comments SET user_id = @existingUser WHERE EXISTS (SELECT @existingUser AS existing_user) and user_ID = %s;
+""" % (env.new_blog_id, old_user_id)
+
+                    # If the user data exists, we want to update/replace existing data
+                    # Remove new user id from the values_str and we'll use @exisingUser value instead.
+                    values_str = re.sub(r'\@newUserID\s\+\s\d+,', '', values_str)
+                    content = content + """
+REPLACE INTO wp_users (%s)
+    SELECT @existingUser, %s
+    FROM DUAL;
+""" % (column_names_str, values_str)
+
+                if table == 'wp_usermeta':
+                    nickname_query = """
+                        SELECT meta_value FROM wp_usermeta
+                        WHERE user_id = %s AND meta_key = 'nickname'
+                        LIMIT 1
+                    """ % data['user_id']
+                    db.query(nickname_query)
+                    nickname_result = db.store_result()
+                    nickname_row = nickname_result.fetch_row(1, 1)
+                    try:
+                        user_nickname = nickname_row[0]['meta_value']
+                        existing_usermeta_query = "SELECT umeta_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
+                        # Again, if the data doesn't exist, insert it.
+                        content = content + """
+SET @existingUsermeta = (%s);
+INSERT INTO wp_usermeta (%s)
+    SELECT %s
+    FROM DUAL WHERE NOT EXISTS (SELECT @existingUsermeta as existing_user_meta);
+""" % (existing_usermeta_query, column_names_str, values_str)
+
+                        # If the user data exists, we want to update/replace existing data
+                        # Remove umeta_id from the values_str and we'll use @exisingUsermeta value instead.
+                        values_str = re.sub(r'\@newUmetaID\s\+\s\d+,', '', values_str)
+                        content = content + """
+REPLACE INTO wp_usermeta (%s)
+    SELECT @existingUsermeta, %s
+    FROM DUAL;
+""" % (column_names_str, values_str)
+                    except IndexError:
+                        pass # A user_id without a nickname? Huh?
 
         # Also restore values in the options table
-        content = content + """update wp_%(new_blog_id)s_options set option_value = @siteUrl where option_name = 'siteurl';
-        update wp_%(new_blog_id)s_options set option_value = @homeVal where option_name = 'home';
-        update wp_%(new_blog_id)s_options set option_value = "wp-content/blogs.dir/%(new_blog_id)s/files" where option_name = 'upload_path';""" % env
+        content = content + """
+UPDATE wp_%(new_blog_id)s_options SET option_value = @siteUrl WHERE option_name = 'siteurl';
+UPDATE wp_%(new_blog_id)s_options SET option_value = @homeVal WHERE option_name = 'home';
+UPDATE wp_%(new_blog_id)s_options SET option_value = "wp-content/blogs.dir/%(new_blog_id)s/files" WHERE option_name = 'upload_path';
+""" % env
 
         # Finally, rename option 'wp_user_roles' to 'wp_%(new_blog_id)s_user_roles'
-        content = content + """update wp_%(new_blog_id)s_options set option_name = 'wp_%(new_blog_id)s_user_roles' where option_name = 'wp_user_roles';""" % env
+        content = content + """
+UPDATE wp_%(new_blog_id)s_options SET option_name = 'wp_%(new_blog_id)s_user_roles' WHERE option_name = 'wp_user_roles';
+""" % env
 
+        # Drop the temporary tables
+        content = content + """
+DROP TEMPORARY TABLE IF EXISTS existing_users;
+DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
+"""
         f.write(content)
 
 
-def _generate_rename_tables_sql():
+def _generate_rename_tables_sql(db):
     print(colors.cyan("Getting list of tables to be renamed...\n"))
-    result = local(
-        'mysql -u %(local_db_user)s -p%(local_db_pass)s -N -B -e "select TABLE_NAME from information_schema.tables ' \
-        'where TABLE_SCHEMA = \'%(single_blog_name)s\'" 2>/dev/null' % env, capture=True);
-
-    tables = result.splitlines()
+    query = """
+    select TABLE_NAME from information_schema.tables where TABLE_SCHEMA = '%(single_blog_name)s'
+    """ % env
+    db.query(query)
+    result = db.store_result()
+    tables = [value['TABLE_NAME'] for value in result.fetch_row(result.num_rows(), 1)]
 
     # We don't want to rename wp_users or wp_usermeta
     for exclude in NETWORK_TABLES:
