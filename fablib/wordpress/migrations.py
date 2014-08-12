@@ -110,7 +110,7 @@ DROP TEMPORARY TABLE IF EXISTS existing_users;
 CREATE TEMPORARY TABLE IF NOT EXISTS existing_users SELECT ID, user_login FROM wp_users;
 
 DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
-CREATE TEMPORARY TABLE IF NOT EXISTS existing_usermeta SELECT meta_value, umeta_id FROM wp_usermeta WHERE meta_key = 'nickname';
+CREATE TEMPORARY TABLE IF NOT EXISTS existing_usermeta SELECT meta_value, umeta_id, user_id FROM wp_usermeta WHERE meta_key = 'nickname';
 
 SET @newUmetaID = (SELECT max(umeta_id) FROM wp_usermeta);
 SET @newUserID = (SELECT max(ID) FROM wp_users);
@@ -118,139 +118,8 @@ SET @siteUrl = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option
 SET @homeVal = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option_name = 'home');
     """ % env
 
-        for table in BLOG_TABLES:
-            table = table % env.new_blog_id
-            query = "select * from %s;"  % (table, );
-            db.query(query)
-            result = db.store_result()
-            for idx in xrange(0, result.num_rows()):
-                row = result.fetch_row(1, 1)
-                data = row[0]
-                values = []
-                for key, value in data.iteritems():
-                    if type(value) == str:
-                        values.append("%s='%s'" % (key, db.escape_string(value)))
-                    elif type(value) == datetime.datetime:
-                        values.append("%s='%s'" % (key, value))
-                    elif value is None:
-                        pass
-                    else:
-                        values.append("%s=%s" % (key, value))
-
-                values_str = ', '.join([value for value in values])
-                content = content + "REPLACE INTO %s SET %s;\n" % (table, values_str)
-
-        for table in NETWORK_TABLES:
-            query = "select * from %s;"  % (table, )
-            db.query(query)
-            result = db.store_result()
-
-            table_desc = result.describe()
-            column_names = [column[0] for column in table_desc]
-            column_names_str = ', '.join(column_names)
-
-            for idx in xrange(0, result.num_rows()):
-                row = result.fetch_row(1, 1)
-                data = row[0]
-                values = []
-
-                for key in column_names:
-                    try:
-                        value = data[key]
-                    except KeyError:
-                        value = None
-
-                    if key == 'umeta_id': # usermeta table
-                        old_umeta_id = value
-                        new_umeta_id = "@newUmetaID + %s" % (old_umeta_id,)
-                        values.append(new_umeta_id)
-                    elif key == 'ID': # users tables
-                        old_user_id = value
-                        new_user_id = "@newUserID + %s" % (old_user_id,)
-                        values.append(new_user_id)
-                    elif type(value) == str:
-                        values.append("'%s'" % (db.escape_string(value), ))
-                    elif type(value) == datetime.datetime:
-                        values.append("'%s'" % (value, ))
-                    elif value is None:
-                        values.append("NULL")
-                    else:
-                        values.append("%s" % (value, ))
-
-                values_str = ', '.join(values)
-
-                if table == 'wp_users':
-                    try:
-                        user_login = data['user_login']
-                    except KeyError:
-                        user_login = 'NULL'
-
-                    # If the user data hasn't been inserted, insert it.
-                    existing_user_query = "SELECT ID FROM existing_users WHERE user_login = '%s' LIMIT 1" % (user_login, )
-                    content = content + """
-SET @existingUser = (%s);
-INSERT INTO wp_users (%s)
-    SELECT %s
-    FROM DUAL WHERE NOT EXISTS (SELECT @existingUser AS existing_user);
-""" % (existing_user_query, column_names_str, values_str)
-
-                    # Update the posts table post_author value
-                    content = content + """
-UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (SELECT @existingUser AS existing_user) AND post_author = %s;
-""" % (env.new_blog_id, new_user_id, old_user_id)
-
-                    content = content + """
-UPDATE wp_%s_posts SET post_author = @existingUser WHERE EXISTS (SELECT @existingUser AS existing_user) AND post_author = %s;
-""" % (env.new_blog_id, old_user_id)
-
-                    # Update the comments table user_id value
-                    content = content + """
-UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (SELECT @existingUser AS existing_user) and user_ID = %s;
-""" % (env.new_blog_id, new_user_id, old_user_id)
-
-                    content = content + """
-UPDATE wp_%s_comments SET user_id = @existingUser WHERE EXISTS (SELECT @existingUser AS existing_user) and user_ID = %s;
-""" % (env.new_blog_id, old_user_id)
-
-                    # If the user data exists, we want to update/replace existing data
-                    # Remove new user id from the values_str and we'll use @exisingUser value instead.
-                    values_str = re.sub(r'\@newUserID\s\+\s\d+,', '', values_str)
-                    content = content + """
-REPLACE INTO wp_users (%s)
-    SELECT @existingUser, %s
-    FROM DUAL;
-""" % (column_names_str, values_str)
-
-                if table == 'wp_usermeta':
-                    nickname_query = """
-                        SELECT meta_value FROM wp_usermeta
-                        WHERE user_id = %s AND meta_key = 'nickname'
-                        LIMIT 1
-                    """ % data['user_id']
-                    db.query(nickname_query)
-                    nickname_result = db.store_result()
-                    nickname_row = nickname_result.fetch_row(1, 1)
-                    try:
-                        user_nickname = nickname_row[0]['meta_value']
-                        existing_usermeta_query = "SELECT umeta_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
-                        # Again, if the data doesn't exist, insert it.
-                        content = content + """
-SET @existingUsermeta = (%s);
-INSERT INTO wp_usermeta (%s)
-    SELECT %s
-    FROM DUAL WHERE NOT EXISTS (SELECT @existingUsermeta as existing_user_meta);
-""" % (existing_usermeta_query, column_names_str, values_str)
-
-                        # If the user data exists, we want to update/replace existing data
-                        # Remove umeta_id from the values_str and we'll use @exisingUsermeta value instead.
-                        values_str = re.sub(r'\@newUmetaID\s\+\s\d+,', '', values_str)
-                        content = content + """
-REPLACE INTO wp_usermeta (%s)
-    SELECT @existingUsermeta, %s
-    FROM DUAL;
-""" % (column_names_str, values_str)
-                    except IndexError:
-                        pass # A user_id without a nickname? Huh?
+        content = content + _get_blog_tables_sql(db)
+        content = content + _get_network_tables_sql(db)
 
         # Also restore values in the options table
         content = content + """
@@ -291,3 +160,184 @@ def _generate_rename_tables_sql(db):
         result += "rename table %s to %s;\n" % (tablename, new_tablename)
 
     return result
+
+
+def _get_blog_tables_sql(db):
+    ret = ''
+    for table in BLOG_TABLES:
+        table = table % env.new_blog_id
+        query = "select * from %s;"  % (table, );
+        db.query(query)
+        result = db.store_result()
+        for idx in xrange(0, result.num_rows()):
+            row = result.fetch_row(1, 1)
+            data = row[0]
+            values = []
+            for key, value in data.iteritems():
+                if type(value) == str:
+                    values.append("%s='%s'" % (key, db.escape_string(value)))
+                elif type(value) == datetime.datetime:
+                    values.append("%s='%s'" % (key, value))
+                elif value is None:
+                    pass
+                else:
+                    values.append("%s=%s" % (key, value))
+
+            values_str = ', '.join([value for value in values])
+            ret = ret + "REPLACE INTO %s SET %s;\n" % (table, values_str)
+
+    return ret
+
+
+def _get_network_tables_sql(db):
+    ret = ''
+    for table in NETWORK_TABLES:
+        if table == 'wp_users':
+            ret = ret + _wp_users_table_sql(db)
+        if table == 'wp_usermeta':
+            ret = ret + _wp_usermeta_table_sql(db)
+    return ret
+
+
+def _wp_users_table_sql(db):
+    ret = ''
+    query = "select * from wp_users order by ID;"
+    db.query(query)
+    result = db.store_result()
+
+    table_desc = result.describe()
+    column_names = [column[0] for column in table_desc]
+    column_names_str = ', '.join(column_names)
+
+    for idx in xrange(0, result.num_rows()):
+        row = result.fetch_row(1, 1)
+        data = row[0]
+        values = []
+        values_update = []
+
+        for key in column_names:
+            try:
+                value = data[key]
+            except KeyError:
+                value = None
+
+            if key == 'ID':
+                old_user_id = value
+                new_user_id = "@newUserID + %s" % (old_user_id,)
+                values.append(new_user_id)
+            elif type(value) == str:
+                values.append("'%s'" % (db.escape_string(value), ))
+                values_update.append("%s='%s'" % (key, db.escape_string(value)))
+            elif type(value) == datetime.datetime:
+                values.append("'%s'" % (value, ))
+                values_update.append("%s='%s'" % (key, value))
+            elif value is None:
+                values.append("NULL")
+            else:
+                values.append("%s" % (value, ))
+                values_update.append("%s=%s" % (key, value))
+
+        values_str = ', '.join(values)
+        user_login = data['user_login']
+
+        # If the user data hasn't been inserted, insert it.
+        existing_user_query = "SELECT ID FROM existing_users WHERE user_login = '%s' LIMIT 1" % (user_login, )
+        ret = ret + """
+INSERT INTO wp_users (%s)
+SELECT %s
+FROM DUAL WHERE NOT EXISTS (%s);
+""" % (column_names_str, values_str, existing_user_query)
+
+        # Update the posts table post_author value
+        ret = ret + """
+UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (%s) AND post_author = %s;
+""" % (env.new_blog_id, new_user_id, existing_user_query, old_user_id)
+
+        # Update the comments table user_id value
+        ret = ret + """
+UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (%s) and user_id = %s;
+""" % (env.new_blog_id, new_user_id, existing_user_query, old_user_id)
+
+        # If the user data exists, we want to update existing data
+        values_str = ', '.join([value for value in values_update])
+        ret = ret + """
+UPDATE wp_users SET %s WHERE ID = (%s);
+""" % (values_str, existing_user_query)
+
+    return ret
+
+
+def _wp_usermeta_table_sql(db):
+    ret = ''
+    query = "select * from wp_usermeta order by user_id;"
+    db.query(query)
+    result = db.store_result()
+
+    table_desc = result.describe()
+    column_names = [column[0] for column in table_desc]
+    column_names_str = ', '.join(column_names)
+
+    for idx in xrange(0, result.num_rows()):
+        row = result.fetch_row(1, 1)
+        data = row[0]
+        values = []
+        values_update = []
+
+        for key in column_names:
+            try:
+                value = data[key]
+            except KeyError:
+                value = None
+
+            if key == 'umeta_id': # usermeta table
+                old_umeta_id = value
+                new_umeta_id = "@newUmetaID + %s" % (old_umeta_id,)
+                values.append(new_umeta_id)
+            elif key == 'user_id':
+                values.append("@newUserID + %s" % (value,))
+            elif type(value) == str:
+                values.append("'%s'" % (db.escape_string(value), ))
+                values_update.append("%s='%s'" % (key, db.escape_string(value)))
+            elif type(value) == datetime.datetime:
+                values.append("'%s'" % (value, ))
+                values_update.append("%s='%s'" % (key, value))
+            elif value is None:
+                values.append("NULL")
+            else:
+                values.append("%s" % (value, ))
+                values_update.append("%s=%s" % (key, value))
+
+        values_str = ', '.join(values)
+
+        nickname_query = """
+            SELECT meta_value FROM wp_usermeta
+            WHERE user_id = %s AND meta_key = 'nickname'
+            LIMIT 1
+        """ % data['user_id']
+        db.query(nickname_query)
+        nickname_result = db.store_result()
+        nickname_row = nickname_result.fetch_row(1, 1)
+
+        try:
+            user_nickname = nickname_row[0]['meta_value']
+        except IndexError:
+            continue
+
+        existing_usermeta_query = "SELECT user_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
+
+        # Again, if the data doesn't exist, insert it.
+        ret = ret + """
+INSERT INTO wp_usermeta (%s)
+SELECT %s
+FROM DUAL WHERE NOT EXISTS (%s);
+""" % (column_names_str, values_str, existing_usermeta_query)
+
+        # If the user data exists, we want to update/replace existing data
+        values_str = ', '.join([value for value in values_update])
+        meta_key = data['meta_key']
+
+        ret = ret + """
+UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';
+""" % (values_str, existing_usermeta_query, meta_key)
+
+    return ret
