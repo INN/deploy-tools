@@ -1,9 +1,6 @@
-import MySQLdb
 import os
 import re
 import datetime
-
-from MySQLdb import ProgrammingError
 
 from fabric.api import *
 from fabric import colors
@@ -14,6 +11,17 @@ from fabric.operations import prompt
 from getpass import getpass as _getpass
 
 from ..local import *
+
+try:
+    import MySQLdb
+    from MySQLdb import ProgrammingError
+except ImportError:
+    print(colors.yellow("""
+WARNING: Could not import MySQLdb module. If you plan on using any database migration commands, please install MySQLdb:
+
+    pip install MySQLdb
+"""))
+
 
 NETWORK_TABLES = ['wp_users', 'wp_usermeta', ]
 BLOG_TABLES = [
