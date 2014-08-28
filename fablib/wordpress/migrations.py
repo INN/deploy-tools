@@ -14,7 +14,7 @@ from ..local import *
 
 try:
     import MySQLdb
-    from MySQLdb import ProgrammingError
+    from MySQLdb import ProgrammingError as _ProgrammingError
 except ImportError:
     print(colors.yellow("""
 WARNING: Could not import MySQLdb module. If you plan on using any database migration commands, please install MySQLdb:
@@ -102,7 +102,7 @@ def single_to_multisite_migration(name=None, new_blog_id=None, ftp_host=None, ft
     print("Cleaning up...\n")
     try:
         db.close()
-    except ProgrammingError:
+    except _ProgrammingError:
         pass
 
 
