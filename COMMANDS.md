@@ -54,25 +54,7 @@ Work on defined staging enviornment.
 
 **name** -- The name the database to reload the dump file into. If none is specified, the deploy tools will use the value of `env.project_name`.
 
-## Deploying
-
-#### dry_run
-
-Don't transfer files, just output what would happen during a real deployment.
-
-#### path:path
-
-**path** -- *Required.* The project's path on the remote server.
-
-#### deploy
-
-Deploy local copy of repository to target WP Engine environment.
-
-#### rollback
-
-Deploy the most recent rollback point.
-
-## For MySQL at localhost
+### For MySQL at localhost
 
 #### local\_create\_db:name
 
@@ -100,6 +82,26 @@ Deploy the most recent rollback point.
 
 **name** -- The name the database to reload the dump file into. If none is specified, the deploy tools will use the value of `env.project_name`.
 
+
+## Deploying
+
+#### dry_run
+
+Don't transfer files, just output what would happen during a real deployment.
+
+#### path:path
+
+**path** -- *Required.* The project's path on the remote server.
+
+#### deploy
+
+Deploy local copy of repository to target WP Engine environment.
+
+#### rollback
+
+Deploy the most recent rollback point.
+
+
 ## General utilities
 
 #### fetch\_sql\_dump
@@ -119,7 +121,6 @@ However, it can serve as a general search and replace function for any text file
 **replacement** -- A string to replace your search term with. For example: "someotherdomain.com". If none is specified, defaults to "vagrant.dev."
 
 #### single_to_multisite_migration
-
 
 #### install_wordpress
 
