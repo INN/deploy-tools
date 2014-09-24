@@ -12,16 +12,6 @@ from getpass import getpass as _getpass
 
 from ..local import *
 
-try:
-    import MySQLdb
-    from MySQLdb import ProgrammingError as _ProgrammingError
-except ImportError:
-    print(colors.yellow("""
-WARNING: Could not import MySQLdb module. If you plan on using any database migration commands, please install MySQLdb:
-
-    pip install MySQLdb
-"""))
-
 
 NETWORK_TABLES = ['wp_users', 'wp_usermeta', ]
 BLOG_TABLES = [
@@ -39,6 +29,17 @@ def single_to_multisite_migration(name=None, new_blog_id=None, ftp_host=None, ft
     """
     Migrate a stand alone blog to an existing multisite instance
     """
+    try:
+        import MySQLdb
+        from MySQLdb import ProgrammingError as _ProgrammingError
+    except ImportError:
+        print(colors.yellow("""
+    WARNING: Could not import MySQLdb module. If you plan on using any database migration commands, please install MySQLdb:
+
+        pip install MySQLdb
+    """))
+        raise
+
     print("This script will help migrate a single WordPress blog to an existing\n"
         "WordPress multisite install by providing a SQL dump that you can\n"
         "apply to your Multisite database.")
