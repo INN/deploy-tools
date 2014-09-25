@@ -18,6 +18,12 @@ BLOG_TABLES = [
     'wp_%s_commentmeta', 'wp_%s_comments', 'wp_%s_links', 'wp_%s_options', 'wp_%s_postmeta',
     'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
 
+try:
+    from local_fabfile import EXTRA_BLOG_TABLES
+    BLOG_TABLES = BLOG_TABLES + EXTRA_BLOG_TABLES
+except ImportError:
+    pass
+
 SQL_CLEANUP_SINGLE_BLOG = """
 ALTER TABLE wp_users ADD spam tinyint(2) default 0;
 ALTER TABLE wp_users ADD deleted tinyint(2) default 0;
@@ -183,7 +189,9 @@ def _get_blog_tables_sql(db):
             data = row[0]
             values = []
             for key, value in data.iteritems():
-                if type(value) == str:
+                if key == 'user_id':
+                    values.append("%s=@newUserID + %s" % (key, value))
+                elif type(value) == str:
                     values.append("%s='%s'" % (key, db.escape_string(value)))
                 elif type(value) == datetime.datetime:
                     values.append("%s='%s'" % (key, value))
