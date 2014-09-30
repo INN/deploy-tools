@@ -13,6 +13,7 @@ from helpers import _search_replace as search_replace
 # Deployment related
 env.path = ''
 env.dry_run = False
+env.verbose = False
 
 def stable():
     """
@@ -58,6 +59,13 @@ def dry_run():
     Don't transfer files, just output what would happen during a real deployment.
     """
     env.dry_run = True
+
+
+def verbose():
+    """
+    Show verbose output when running deploy commands
+    """
+    env.verbose = True
 
 
 def deploy():
