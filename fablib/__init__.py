@@ -9,10 +9,12 @@ from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, d
 from wordpress.migrations import *
 from hipchat import notify_hipchat as _notify_hipchat
 from helpers import _search_replace as search_replace
+from unittests import setup_tests, run_tests
 
 # Deployment related
 env.path = ''
 env.dry_run = False
+env.verbose = False
 
 def stable():
     """
@@ -58,6 +60,13 @@ def dry_run():
     Don't transfer files, just output what would happen during a real deployment.
     """
     env.dry_run = True
+
+
+def verbose():
+    """
+    Show verbose output when running deploy commands
+    """
+    env.verbose = True
 
 
 def deploy():

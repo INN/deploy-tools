@@ -41,7 +41,7 @@ install_pkg build-essential python-setuptools python-dev zip \
     libpq-dev postgresql-client mysql-client libmysqlclient-dev \
     runit proj libfreetype6-dev libjpeg-dev zlib1g-dev \
     libgdal1-dev vim curl python-software-properties memcached \
-    php-pear
+    php-pear subversion
 
 # install everything but the kitchen sink
 echo "Installing LAMP stack"
@@ -114,6 +114,11 @@ mysql -u $VAGRANT_DB_USER -p$VAGRANT_DB_PASS -e "grant all privileges on *.* to 
 curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x wp-cli.phar
 mv wp-cli.phar /usr/local/bin/wp
+
+# Install PHPUnit for wp unit testing.
+wget https://phar.phpunit.de/phpunit.phar
+chmod +x phpunit.phar
+mv phpunit.phar /usr/local/bin/phpunit
 
 # Restart everything
 service apache2 restart

@@ -105,21 +105,41 @@ def fetch_sql_dump():
 # Utilities
 def _initial_deploy(dest_path):
     if env.dry_run:
-        ret = local('git ftp init --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
+        if env.verbose:
+            cmd = 'git ftp init -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        else:
+            cmd = 'git ftp init --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        ret = local(cmd)
     else:
-        ret = local('git ftp init --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
+        if env.verbose:
+            cmd = 'git ftp init -v --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        else:
+            cmd = 'git ftp init --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        ret = local(cmd)
     return ret
 
 
 def _deploy(dest_path):
     if env.dry_run:
-        ret = local('git ftp push --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
+        if env.verbose:
+            cmd = 'git ftp push -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        else:
+            cmd = 'git ftp push --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        ret = local(cmd)
     else:
-        ret = local('git ftp push --user "%s" --passwd "%s" sftp://%s/%s' % (
-            env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep))
+        if env.verbose:
+            cmd = 'git ftp push -v --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        else:
+            cmd = 'git ftp push --user "%s" --passwd "%s" sftp://%s/%s' % (
+                env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+        ret = local(cmd)
     return ret
 
 
