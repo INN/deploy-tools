@@ -354,7 +354,7 @@ FROM DUAL WHERE NOT EXISTS (%s);
         meta_key = data['meta_key']
 
         ret = ret + """
-UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';
-""" % (values_str, existing_usermeta_query, meta_key)
+UPDATE wp_usermeta SET %s WHERE user_id = (%s);
+""" % (values_str, existing_usermeta_query)
 
     return ret
