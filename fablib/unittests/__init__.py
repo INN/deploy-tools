@@ -9,16 +9,15 @@ from StringIO import StringIO
 
 def setup_tests(plugin):
   """
-  Deploy local copy of repository to target WP Engine environment.
+  Setup unit tests for a plugin
   """
-
   print(colors.cyan("Setting up tests for " + plugin + "..."));
 
-  ## Does this plugin exist?
-  with cd('/vagrant'):
-      var = run('wp plugin list --format=json --fields=name',quiet=True)
+  # Does this plugin exist?
+  with cd(env.path):
+      var = run('wp plugin list --format=json --fields=name', quiet=True)
       plugins = json.loads(var)
-      if ({'name':plugin} in plugins):
+      if {'name': plugin} in plugins:
           print "Found plugin " + plugin
           print "Initalizing tests..."
           sudo("wp --allow-root scaffold plugin-tests " + plugin)
@@ -28,11 +27,16 @@ def setup_tests(plugin):
       else:
           print("Warning: Could not find plugin: " + colors.red(plugin));
 
+
 def run_tests(plugin):
-  with cd('/vagrant'):
+  """
+  Run unit tests for a plugin
+  """
+  with cd(env.path):
     directory = run("wp plugin path " + plugin + " --dir")
   with cd(directory):
     run('phpunit')
+
 
 def pretty(d, indent=0):
    for key, value in d.iteritems():

@@ -42,3 +42,14 @@ def vagrant_reload_db(dump=None, name=None):
     Destroy, create and load a database on your vagrant instance
     """
     _reload_db(dump, name, env.vagrant_host, env.vagrant_db_user, env.vagrant_db_pass)
+
+
+def vagrant():
+    """
+    Work on vagrant (dev) environment
+    """
+    env.user = 'vagrant'
+    env.hosts = [env.vagrant_host, ]
+    env.path = '/vagrant'
+    result = local('vagrant ssh-config | grep IdentityFile', capture=True)
+    env.key_filename = result.split()[1]
