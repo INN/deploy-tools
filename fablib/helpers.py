@@ -56,8 +56,7 @@ def _destroy_db(name=None, host=None, user=None, password=None):
         env.db_name = name or env.project_name
 
         print(colors.red("Destroying database: %(db_name)s" % env))
-        print('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "drop database %(db_name)s;"' % env)
-        local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "drop database `%(db_name)s`;"' % env)
+        local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "drop database %(db_name)s;"' % env)
         print(colors.green('Finished destroying database!'))
     else:
         print(colors.cyan("Exiting..."))
