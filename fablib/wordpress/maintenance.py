@@ -5,7 +5,7 @@ from fabric import colors
 
 from StringIO import StringIO
 
-MAINTENANCE_REWRITE = "RewriteRule ^wp-(.+) maintenance.html [R=302,L]\n"
+MAINTENANCE_REWRITE = "RewriteRule ^wp-admin(.+) maintenance.html [R=302,L]\n"
 MAINTENANCE_HTML = """
 <!DOCTYPE html>
 <html>
