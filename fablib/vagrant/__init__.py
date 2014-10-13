@@ -49,6 +49,7 @@ def vagrant():
     Work on vagrant (dev) environment
     """
     env.user = 'vagrant'
+    env.settings = 'vagrant'
     env.hosts = [env.vagrant_host, ]
     env.path = '/vagrant'
     result = local('vagrant ssh-config | grep IdentityFile', capture=True)

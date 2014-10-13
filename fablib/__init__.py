@@ -5,8 +5,11 @@ from fabric import colors
 
 from local import *
 from vagrant import *
+
 from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, deploy as _wp_deploy
+from wordpress.maintenance import start_maintenance, stop_maintenance
 from wordpress.migrations import *
+
 from hipchat import notify_hipchat as _notify_hipchat
 from helpers import _search_replace as search_replace
 from unittests import setup_tests, run_tests
