@@ -3,6 +3,8 @@ import json
 from fabric.api import *
 from urllib import urlopen, urlencode
 
+from ..helpers import _capture
+
 
 class HipChatNotifier:
 
@@ -38,7 +40,7 @@ class HipChatNotifier:
 def notify_hipchat():
     if env.hipchat_token and env.hipchat_room_id and not env.dry_run:
         hp = HipChatNotifier(env.hipchat_token)
-        name = local('git config user.name', capture=True)
+        name = _capture('git config user.name')
         if name is '':
             name = 'Someone'
         message = '%s just deployed "%s" (branch: %s) to %s' % (name, env.project_name, env.branch, env.settings)

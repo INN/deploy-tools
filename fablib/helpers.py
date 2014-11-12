@@ -127,3 +127,19 @@ def _require_env_var(name):
             raise error
     except AttributeError:
         raise error
+
+
+def _capture(cmd, type='local'):
+    """
+    Capture output of a command and suppress messages that Fabric is
+    running the command. (e.g. "[hostname] run: ...")
+    """
+    with hide('running'):
+        if type is 'local':
+            result = local(cmd, capture=True)
+        if type is 'run':
+            result = run(cmd, capture=True)
+        if type is 'sudo':
+            result = sudo(cmd, capture=True)
+        return result
+

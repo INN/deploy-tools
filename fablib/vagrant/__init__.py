@@ -1,6 +1,6 @@
 from fabric.api import *
 
-from ..helpers import _create_db, _destroy_db, _load_db, _dump_db, _reload_db
+from ..helpers import _create_db, _destroy_db, _load_db, _dump_db, _reload_db, _capture
 
 
 # Local development helpers
@@ -52,5 +52,5 @@ def vagrant():
     env.settings = 'vagrant'
     env.hosts = [env.vagrant_host, ]
     env.path = '/vagrant'
-    result = local('vagrant ssh-config | grep IdentityFile', capture=True)
+    result = _capture('vagrant ssh-config | grep IdentityFile')
     env.key_filename = result.split()[1]

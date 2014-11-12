@@ -2,6 +2,7 @@ import os
 
 from fabric.api import *
 from fabric import colors
+from ..helpers import _capture
 
 from StringIO import StringIO
 
@@ -42,7 +43,7 @@ def verify_prerequisites():
     with settings(warn_only=True):
 
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
-        ret = local('curl -V | grep sftp', capture=True)
+        ret = _capture('curl -V | grep sftp')
         if ret.return_code == 1:
             import sys
             if sys.platform.startswith('darwin'):
@@ -59,7 +60,7 @@ def verify_prerequisites():
             print(colors.green('Your installation of curl supports sftp!'))
 
         print(colors.cyan('Ensuring you have git-ftp installed...'))
-        ret = local('git ftp --version', capture=True)
+        ret = _capture('git ftp --version')
         if ret.return_code == 1:
             print(colors.yellow(
                 'You do not have git-ftp installed. Attempting installation via brew...'))
