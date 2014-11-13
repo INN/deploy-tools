@@ -1,8 +1,14 @@
 import os
 
-from fabric.api import *
+from fabric.api import local, require, settings, task, get, hide
+from fabric.state import env
 from fabric import colors
-from ..helpers import _capture
+
+from .. import helpers
+
+import maintenance
+import migrations
+import tests
 
 from StringIO import StringIO
 
@@ -14,32 +20,33 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
 
     if env.branch != 'rollback':
-        rollback_sha1 = _get_rollback_sha1()
+        rollback_sha1 = get_rollback_sha1()
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
-            _capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1, type='local')
-            _capture('git fetch', type='local')
+            helpers.capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1, type='local')
+            helpers.capture('git fetch', type='local')
         else:
             print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
 
     print(colors.cyan("Checking out branch: %s" % env.branch))
-    _capture('git checkout %s' % env.branch, type='local')
-    _capture('git submodule update --init --recursive', type='local')
+    helpers.capture('git checkout %s' % env.branch, type='local')
+    helpers.capture('git submodule update --init --recursive', type='local')
 
     with settings(warn_only=True):
         print(colors.cyan("Deploying..."))
-        ret = _deploy(env.path)
+        ret = do_deploy(env.path)
 
         if ret.return_code and ret.return_code > 0:
             if ret.return_code in [8, 5, ]:
                 print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
-                ret = _initial_deploy(env.path)
+                ret = initial_deploy(env.path)
                 if ret.return_code and ret.return_code > 0:
                     print(colors.red("An error occurred..."))
                     if not env.verbose:
                         print(colors.yellow('Try deploying with `verbose` for more information...'))
 
 
+@task
 def verify_prerequisites():
     """
     Checks to make sure you have curl (with ssh) and git-ftp installed, Attempts installation via brew if you do not.
@@ -47,15 +54,15 @@ def verify_prerequisites():
     with settings(warn_only=True):
 
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
-        ret = _capture('curl -V | grep sftp')
+        ret = helpers.capture('curl -V | grep sftp')
         if ret.return_code == 1:
             import sys
             if sys.platform.startswith('darwin'):
                 print(colors.yellow(
                     'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
-                _capture('brew update', type='local')
-                _capture('brew install curl --with-ssh', type='local')
-                _capture('brew link --force curl', type='local')
+                helpers.capture('brew update', type='local')
+                helpers.capture('brew install curl --with-ssh', type='local')
+                helpers.capture('brew link --force curl', type='local')
             else:
                 print(colors.red(
                     'Your version of curl does not support sftp. You may have to recompile it with sftp support. See the deploy-tools README for more information.'
@@ -64,19 +71,20 @@ def verify_prerequisites():
             print(colors.green('Your installation of curl supports sftp!'))
 
         print(colors.cyan('Ensuring you have git-ftp installed...'))
-        ret = _capture('git ftp --version')
+        ret = helpers.capture('git ftp --version')
         if ret.return_code == 1:
             print(colors.yellow(
                 'You do not have git-ftp installed. Attempting installation via brew...'))
-            _capture('brew update', type='local')
-            _capture('brew install git-ftp', type='local')
+            helpers.capture('brew update', type='local')
+            helpers.capture('brew install git-ftp', type='local')
         else:
             print(colors.green('You have git-ftp installed!'))
 
         print(colors.green('Your system is ready to deploy code!'))
 
 
-def install_wordpress(tag):
+@task
+def install(tag):
     """
     Downloads specified version of WordPress from https://github.com/WordPress/WordPress and
     installs it.
@@ -84,21 +92,22 @@ def install_wordpress(tag):
     with settings(warn_only=True):
         try:
             print(colors.cyan('Downloading WordPress %s' % tag))
-            _capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag, type='local')
+            helpers.capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag, type='local')
 
             print(colors.cyan('Unzipping...'))
-            _capture('unzip %s.zip' % tag, type='local')
+            helpers.capture('unzip %s.zip' % tag, type='local')
 
             print(colors.cyan('Copying new files to our project directory...'))
-            _capture('rsync -ru WordPress-%s/* .' % tag, type='local')
+            helpers.capture('rsync -ru WordPress-%s/* .' % tag, type='local')
         finally:
             print(colors.cyan('Cleaning up...'))
-            _capture('rm -Rf %s.zip' % tag, type='local')
-            _capture('rm -Rf WordPress-%s' % tag, type='local')
+            helpers.capture('rm -Rf %s.zip' % tag, type='local')
+            helpers.capture('rm -Rf WordPress-%s' % tag, type='local')
 
         print(colors.cyan('Finished upgrading WordPress!'))
 
 
+@task
 def fetch_sql_dump():
     """
     Gets the latest mysql.sql dump for your site from WPEngine.
@@ -108,7 +117,7 @@ def fetch_sql_dump():
 
 
 # Utilities
-def _initial_deploy(dest_path):
+def initial_deploy(dest_path):
     if env.dry_run:
         if env.verbose:
             cmd = 'git ftp init -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
@@ -134,7 +143,7 @@ def _initial_deploy(dest_path):
     return ret
 
 
-def _deploy(dest_path):
+def do_deploy(dest_path):
     if env.dry_run:
         if env.verbose:
             cmd = 'git ftp push -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
@@ -160,7 +169,7 @@ def _deploy(dest_path):
     return ret
 
 
-def _get_rollback_sha1():
+def get_rollback_sha1():
     with settings(warn_only=True):
         log_file = StringIO()
         get(remote_path='/.git-ftp.log', local_path=log_file)

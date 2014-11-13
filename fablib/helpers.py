@@ -1,12 +1,13 @@
 import os
 
-from fabric.api import *
+from fabric.api import local, task, hide
+from fabric.state import env
 from fabric import colors
 from fabric.contrib.console import confirm
 
 
 # Database utilities
-def _search_replace(file=None, search=None, replacement="vagrant.dev"):
+def search_replace(file=None, search=None, replacement="vagrant.dev"):
     """
     Search for and replace string in a file. Meant to be used with WP databases where
     one domain name needs to be replaced with another.
@@ -22,14 +23,14 @@ def _search_replace(file=None, search=None, replacement="vagrant.dev"):
         local('cat %s | sed "s/%s/%s/g" > prepared%s' % (file, search, replacement, ext))
 
 
-def _create_db(name=None, host=None, user=None, password=None):
+def create_db(name=None, host=None, user=None, password=None):
     """
     Create a new database
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
-    _require_env_var('project_name')
+    require_env_var('project_name')
 
     env.db_host = host
     env.db_user = user
@@ -42,14 +43,14 @@ def _create_db(name=None, host=None, user=None, password=None):
         print(colors.green('Finished creating database!'))
 
 
-def _destroy_db(name=None, host=None, user=None, password=None):
+def destroy_db(name=None, host=None, user=None, password=None):
     """
     Drop a database
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
-    _require_env_var('project_name')
+    require_env_var('project_name')
 
     if confirm(colors.red("Are you sure you want to destroy database: %s") % name):
         env.db_host = host
@@ -66,14 +67,14 @@ def _destroy_db(name=None, host=None, user=None, password=None):
         exit()
 
 
-def _load_db(dump=None, name=None, host=None, user=None, password=None):
+def load_db(dump=None, name=None, host=None, user=None, password=None):
     """
     Load a database with specified dump file
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
-    _require_env_var('project_name')
+    require_env_var('project_name')
 
     if dump:
         env.db_host = host
@@ -91,14 +92,14 @@ def _load_db(dump=None, name=None, host=None, user=None, password=None):
         exit()
 
 
-def _dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
+def dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
     """
     Dump a database
     """
     if None in [host, user, password]:
         raise ValueError('Must specifiy database host, user and password')
 
-    _require_env_var('project_name')
+    require_env_var('project_name')
 
     env.db_host = host
     env.db_user = user
@@ -112,16 +113,16 @@ def _dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
         print(colors.green('Finished dumping database!'))
 
 
-def _reload_db(dump=None, name=None, host=None, user=None, password=None):
+def reload_db(dump=None, name=None, host=None, user=None, password=None):
     """
     Destroy, create and load a database
     """
-    _destroy_db(name or env.project_name, host, user, password)
-    _create_db(name or env.project_name, host, user, password)
-    _load_db(dump, name or env.project_name, host, user, password)
+    destroy_db(name or env.project_name, host, user, password)
+    create_db(name or env.project_name, host, user, password)
+    load_db(dump, name or env.project_name, host, user, password)
 
 
-def _require_env_var(name):
+def require_env_var(name):
     """
     Be sure that an env variable is defined and that it is not an empty string
     """
@@ -134,7 +135,7 @@ def _require_env_var(name):
         raise error
 
 
-def _capture(cmd, type='local'):
+def capture(cmd, type='local'):
     """
     Capture output of a command and suppress messages that Fabric is
     running the command. (e.g. "[hostname] run: ...")

@@ -1,5 +1,8 @@
 from tools.fablib import *
 
+from fabric.api import task
+
+
 """
 Base configuration
 """
@@ -12,7 +15,9 @@ Add HipChat info to send a message to a room when new code has been deployed.
 env.hipchat_token = ''
 env.hipchat_room_id = ''
 
+
 # Environments
+@task
 def production():
     """
     Work on production environment
@@ -23,6 +28,7 @@ def production():
     env.password = ''
 
 
+@task
 def staging():
     """
     Work on staging environment

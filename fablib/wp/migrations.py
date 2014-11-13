@@ -2,15 +2,15 @@ import os
 import re
 import datetime
 
-from fabric.api import *
 from fabric import colors
-
+from fabric.api import get
 from fabric.contrib.console import confirm
 from fabric.operations import prompt
+from fabric.state import env
 
 from getpass import getpass as _getpass
 
-from ..local import *
+from .. import local as local_commands
 
 
 NETWORK_TABLES = ['wp_users', 'wp_usermeta', ]
@@ -30,6 +30,7 @@ ALTER TABLE wp_users ADD deleted tinyint(2) default 0;
 UPDATE wp_usermeta SET meta_key = 'wp_%(new_blog_id)s_user_level' WHERE meta_key = 'wp_user_level';
 UPDATE wp_usermeta SET meta_key = 'wp_%(new_blog_id)s_capabilities' WHERE meta_key = 'wp_capabilities';
 UPDATE wp_posts SET post_content = replace(post_content, 'wp-content/uploads/', 'wp-content/blogs.dir/%(new_blog_id)s/files/');"""
+
 
 def single_to_multisite_migration(name=None, new_blog_id=None, ftp_host=None, ftp_user=None, ftp_pass=None):
     """
@@ -71,9 +72,9 @@ def single_to_multisite_migration(name=None, new_blog_id=None, ftp_host=None, ft
 
     print(colors.cyan("(Re-)Loading database backup on localhost..."))
     with settings(warn_only=True):
-        local_destroy_db(env.single_blog_name)
-        local_create_db(env.single_blog_name)
-        local_load_db('mysql.sql', env.single_blog_name)
+        local_commands.destroy_db(env.single_blog_name)
+        local_commands.create_db(env.single_blog_name)
+        local_commands.load_db('mysql.sql', env.single_blog_name)
 
     db = MySQLdb.connect(
             host="localhost",

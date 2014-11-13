@@ -1,24 +1,23 @@
 import os
 
-from fabric.api import *
+from fabric.api import require, settings, task
+from fabric.state import env
 from fabric import colors
 
-from local import *
-from vagrant import *
+# Other fabfiles
+import local
+import vagrant
+import wp
 
-from wordpress import fetch_sql_dump, install_wordpress, verify_prerequisites, deploy as _wp_deploy
-from wordpress.maintenance import start_maintenance, stop_maintenance
-from wordpress.migrations import *
-
-from hipchat import notify_hipchat as _notify_hipchat
-from helpers import _search_replace as search_replace
-from unittests import setup_tests, run_tests, install_phpunit
+from hipchat import notify_hipchat
 
 # Deployment related
 env.path = ''
 env.dry_run = False
 env.verbose = False
 
+
+@task
 def stable():
     """
     Work on stable branch.
@@ -27,6 +26,7 @@ def stable():
     env.branch = 'stable'
 
 
+@task
 def master():
     """
     Work on development branch.
@@ -35,6 +35,7 @@ def master():
     env.branch = 'master'
 
 
+@task
 def branch(branch_name):
     """
     Work on any specified branch.
@@ -43,6 +44,7 @@ def branch(branch_name):
     env.branch = branch_name
 
 
+@task
 def rollback():
     """
     Deploy the most recent rollback point.
@@ -51,6 +53,7 @@ def rollback():
     env.branch = 'rollback'
 
 
+@task
 def path(path):
     """
     Specify the project's path on remote server.
@@ -58,6 +61,7 @@ def path(path):
     env.path = path
 
 
+@task
 def dry_run():
     """
     Don't transfer files, just output what would happen during a real deployment.
@@ -65,6 +69,7 @@ def dry_run():
     env.dry_run = True
 
 
+@task
 def verbose():
     """
     Show verbose output when running deploy commands
@@ -72,11 +77,11 @@ def verbose():
     env.verbose = True
 
 
+@task
 def deploy():
     """
     Deploy local copy of repository to target environment.
     """
     require('branch', provided_by=[master, stable, branch, ])
-    _wp_deploy()
-    _notify_hipchat()
-
+    wp.deploy()
+    notify_hipchat()

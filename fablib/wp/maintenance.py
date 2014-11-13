@@ -1,6 +1,7 @@
 import paramiko
 
-from fabric.api import *
+from fabric.api import task, get, put
+from fabric.state import env
 from fabric import colors
 
 from StringIO import StringIO
@@ -25,36 +26,38 @@ MAINTENANCE_HTML = """
 </html>"""
 
 
-def start_maintenance():
+@task
+def start():
     """
     Prevents users from logging into the WordPress dashboard
     """
-    htaccess = _get_htaccess()
+    htaccess = get_htaccess()
     lines = htaccess.readlines()
     updated_lines = []
     for line in lines:
         updated_lines.append(line)
         if line.strip() == 'RewriteBase /':
             updated_lines.append(MAINTENANCE_REWRITE)
-    _write_maintenance_html()
-    _write_htaccess(updated_lines)
+    write_maintenance_html()
+    write_htaccess(updated_lines)
 
 
-def stop_maintenance():
+@task
+def stop():
     """
     Removes barrier to users attempting to login to the WordPress dashboard
     """
-    htaccess = _get_htaccess()
+    htaccess = get_htaccess()
     lines = htaccess.readlines()
     updated_lines = []
     for line in lines:
         if line != MAINTENANCE_REWRITE:
             updated_lines.append(line)
-    _remove_maintenance_html()
-    _write_htaccess(updated_lines)
+    remove_maintenance_html()
+    write_htaccess(updated_lines)
 
 
-def _get_htaccess():
+def get_htaccess():
     if not env.path:
         env.path = ''
     htaccess = StringIO()
@@ -63,37 +66,37 @@ def _get_htaccess():
     return htaccess
 
 
-def _write_htaccess(lines):
+def write_htaccess(lines):
     if not env.path:
         env.path = ''
     htaccess = StringIO()
     htaccess.writelines(lines)
     htaccess.seek(0)
-    put(remote_path='%s/.htaccess' % env.path, local_path=htaccess, use_sudo=_use_sudo())
+    put(remote_path='%s/.htaccess' % env.path, local_path=htaccess, use_sudo=use_sudo())
 
 
-def _write_maintenance_html():
+def write_maintenance_html():
     html = StringIO()
     html.write(MAINTENANCE_HTML)
-    put(remote_path='%s/maintenance.html' % env.path, local_path=html, use_sudo=_use_sudo())
+    put(remote_path='%s/maintenance.html' % env.path, local_path=html, use_sudo=use_sudo())
 
 
-def _remove_maintenance_html():
+def remove_maintenance_html():
     if env.settings == 'vagrant':
         with cd(env.path):
             sudo('rm maintenance.html')
     else:
-        _sftp_remove('%s/maintenance.html' % env.path)
+        sftp_remove('%s/maintenance.html' % env.path)
 
 
-def _use_sudo():
+def use_sudo():
     if env.settings == 'vagrant':
         return True
     else:
         return False
 
 
-def _sftp_remove(path):
+def sftp_remove(path):
     transport = paramiko.Transport((env.hosts[0], int(env.port)))
     transport.connect(username=env.user, password=env.password)
     sftp = paramiko.SFTPClient.from_transport(transport)

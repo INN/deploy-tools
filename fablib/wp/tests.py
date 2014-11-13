@@ -1,18 +1,22 @@
-import os
 import json
-from pprint import pprint
-from fabric.api import *
+
+from fabric.api import require, settings, task, put, hide
+from fabric.state import env
 from fabric import colors
-from ..helpers import _capture
-from ..vagrant import vagrant_destroy_db
+
+from .. import helpers
+from .. import vagrant
 
 from StringIO import StringIO
+
+__all__ = ['setup', 'run', 'install_phpunit', ]
 
 WP_TEST_DB = 'largotest'
 WP_TESTS_DIR = '/tmp/wordpress-tests-lib'
 
 
-def setup_tests(name):
+@task
+def setup(name):
     """
     Setup unit tests for a theme or plugin
     """
@@ -22,8 +26,8 @@ def setup_tests(name):
 
     # Does this theme or plugin exist?
     with cd(env.path):
-        plugins = json.loads(_capture('wp plugin list --format=json --fields=name', type='run'))
-        themes = json.loads(_capture('wp theme list --format=json --fields=name', type='run'))
+        plugins = json.loads(helpers.capture('wp plugin list --format=json --fields=name', type='run'))
+        themes = json.loads(helpers.capture('wp theme list --format=json --fields=name', type='run'))
 
         test = { 'name': name }
         if test in plugins:
@@ -42,15 +46,16 @@ def setup_tests(name):
           print "Warning: Could not find theme or plugin: " + colors.red(name)
 
 
-def run_tests(name):
+@task
+def run(name):
     """
     Run unit tests for a theme or plugin
     """
     require('settings', provided_by=['vagrant', ])
 
     with cd(env.path):
-        plugins = json.loads(_capture('wp plugin list --format=json --fields=name', type='run'))
-        themes = json.loads(_capture('wp theme list --format=json --fields=name', type='run'))
+        plugins = json.loads(helpers.capture('wp plugin list --format=json --fields=name', type='run'))
+        themes = json.loads(helpers.capture('wp theme list --format=json --fields=name', type='run'))
 
         test = { 'name': name }
         if test in plugins:
@@ -60,6 +65,17 @@ def run_tests(name):
 
     with cd(directory), shell_env(WP_TESTS_DIR=WP_TESTS_DIR):
         run('phpunit')
+
+
+@task
+def install_phpunit():
+    """
+    Install phpunit on vagrant box
+    """
+    require('settings', provided_by=['vagrant', ])
+    run('wget https://phar.phpunit.de/phpunit.phar')
+    run('chmod +x phpunit.phar')
+    sudo('mv phpunit.phar /usr/local/bin/phpunit')
 
 
 def scaffold_tests(dir=None):
@@ -91,7 +107,7 @@ def scaffold_tests(dir=None):
             framework_dir = run('ls %s' % WP_TESTS_DIR)
             if framework_dir.find('No such file or directory') > -1:
                 print(colors.green("Installing the WordPress testing framework..."))
-                vagrant_destroy_db(WP_TEST_DB)
+                vagrant.destroy_db(WP_TEST_DB)
                 put('tools/fablib/etc/install-wp-tests.sh', '/tmp/install-wp-tests.sh', use_sudo=True)
                 run('bash /tmp/install-wp-tests.sh %s root root localhost latest' % WP_TEST_DB)
             else:
@@ -102,11 +118,4 @@ def get_path(type=None, name=None):
     """
     Get the path for a theme or plugin
     """
-    return _capture("wp " + type + " path " + name + " --dir", type='run')
-
-
-def install_phpunit():
-    require('settings', provided_by=['vagrant', ])
-    run('wget https://phar.phpunit.de/phpunit.phar')
-    run('chmod +x phpunit.phar')
-    sudo('mv phpunit.phar /usr/local/bin/phpunit')
+    return helpers.capture("wp " + type + " path " + name + " --dir", type='run')
