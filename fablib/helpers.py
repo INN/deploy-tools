@@ -17,8 +17,9 @@ def _search_replace(file=None, search=None, replacement="vagrant.dev"):
     """
     file = os.path.expanduser(file)
     throwaway, ext = os.path.splitext(file)
-    print(colors.cyan('Cleaning file. Searching for: %s, replacing with: %s' % (search, replacement)))
-    local('cat %s | sed "s/%s/%s/g" > prepared%s' % (file, search, replacement, ext))
+    with hide('running', 'stdout', 'stderr'):
+        print(colors.cyan('Cleaning file. Searching for: %s, replacing with: %s' % (search, replacement)))
+        local('cat %s | sed "s/%s/%s/g" > prepared%s' % (file, search, replacement, ext))
 
 
 def _create_db(name=None, host=None, user=None, password=None):
@@ -35,9 +36,10 @@ def _create_db(name=None, host=None, user=None, password=None):
     env.db_pass = password
     env.db_name = name or env.project_name
 
-    print(colors.cyan("Creating database: %(db_name)s" % env))
-    local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "create database %(db_name)s;"' % env)
-    print(colors.green('Finished creating database!'))
+    with hide('running', 'stdout', 'stderr'):
+        print(colors.cyan("Creating database: %(db_name)s" % env))
+        local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "create database %(db_name)s;"' % env)
+        print(colors.green('Finished creating database!'))
 
 
 def _destroy_db(name=None, host=None, user=None, password=None):
@@ -55,9 +57,10 @@ def _destroy_db(name=None, host=None, user=None, password=None):
         env.db_pass = password
         env.db_name = name or env.project_name
 
-        print(colors.red("Destroying database: %(db_name)s" % env))
-        local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "drop database %(db_name)s;"' % env)
-        print(colors.green('Finished destroying database!'))
+        with hide('running', 'stdout', 'stderr'):
+            print(colors.red("Destroying database: %(db_name)s" % env))
+            local('mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s -e "drop database %(db_name)s;"' % env)
+            print(colors.green('Finished destroying database!'))
     else:
         print(colors.cyan("Exiting..."))
         exit()
@@ -79,9 +82,10 @@ def _load_db(dump=None, name=None, host=None, user=None, password=None):
         env.db_name = name or env.project_name
         env.dump_file = os.path.expanduser(dump)
 
-        print(colors.cyan("Loading database..."))
-        local('cat %(dump_file)s | mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s %(db_name)s' % env)
-        print(colors.green('Finished loading database!'))
+        with hide('running', 'stdout', 'stderr'):
+            print(colors.cyan("Loading database..."))
+            local('cat %(dump_file)s | mysql -s --host=%(db_host)s --user=%(db_user)s --password=%(db_pass)s %(db_name)s' % env)
+            print(colors.green('Finished loading database!'))
     else:
         print(colors.yellow('Please specify which database file to load!'))
         exit()
@@ -102,9 +106,10 @@ def _dump_db(dump='dump.sql', name=None, host=None, user=None, password=None):
     env.db_name = name or env.project_name
     env.dump_file = os.path.expanduser(dump)
 
-    print(colors.cyan('Dumping database: %(db_name)s' % env))
-    local('mysqldump -h %(db_host)s -u %(db_user)s -p%(db_pass)s --quick %(db_name)s > %(dump_file)s' % env)
-    print(colors.green('Finished dumping database!'))
+    with hide('running', 'stdout', 'stderr'):
+        print(colors.cyan('Dumping database: %(db_name)s' % env))
+        local('mysqldump -h %(db_host)s -u %(db_user)s -p%(db_pass)s --quick %(db_name)s > %(dump_file)s' % env)
+        print(colors.green('Finished dumping database!'))
 
 
 def _reload_db(dump=None, name=None, host=None, user=None, password=None):
@@ -134,12 +139,12 @@ def _capture(cmd, type='local'):
     Capture output of a command and suppress messages that Fabric is
     running the command. (e.g. "[hostname] run: ...")
     """
-    with hide('running'):
+    with hide('running', 'stdout'):
         if type is 'local':
             result = local(cmd, capture=True)
         if type is 'run':
-            result = run(cmd, capture=True)
+            result = run(cmd)
         if type is 'sudo':
-            result = sudo(cmd, capture=True)
+            result = sudo(cmd)
         return result
 
