@@ -17,14 +17,14 @@ def deploy():
         rollback_sha1 = _get_rollback_sha1()
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
-            local('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
-            local('git fetch')
+            _capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1, type='local')
+            _capture('git fetch', type='local')
         else:
             print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
 
     print(colors.cyan("Checking out branch: %s" % env.branch))
-    local('git checkout %s' % env.branch)
-    local('git submodule update --init --recursive')
+    _capture('git checkout %s' % env.branch, type='local')
+    _capture('git submodule update --init --recursive', type='local')
 
     with settings(warn_only=True):
         print(colors.cyan("Deploying..."))
@@ -33,7 +33,11 @@ def deploy():
         if ret.return_code and ret.return_code > 0:
             if ret.return_code in [8, 5, ]:
                 print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
-                _initial_deploy(env.path)
+                ret = _initial_deploy(env.path)
+                if ret.return_code and ret.return_code > 0:
+                    print(colors.red("An error occurred..."))
+                    if not env.verbose:
+                        print(colors.yellow('Try deploying with `verbose` for more information...'))
 
 
 def verify_prerequisites():
@@ -49,9 +53,9 @@ def verify_prerequisites():
             if sys.platform.startswith('darwin'):
                 print(colors.yellow(
                     'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
-                local('brew update')
-                local('brew install curl --with-ssh')
-                local('brew link --force curl')
+                _capture('brew update', type='local')
+                _capture('brew install curl --with-ssh', type='local')
+                _capture('brew link --force curl', type='local')
             else:
                 print(colors.red(
                     'Your version of curl does not support sftp. You may have to recompile it with sftp support. See the deploy-tools README for more information.'
@@ -64,8 +68,8 @@ def verify_prerequisites():
         if ret.return_code == 1:
             print(colors.yellow(
                 'You do not have git-ftp installed. Attempting installation via brew...'))
-            local('brew update')
-            local('brew install git-ftp')
+            _capture('brew update', type='local')
+            _capture('brew install git-ftp', type='local')
         else:
             print(colors.green('You have git-ftp installed!'))
 
@@ -80,17 +84,17 @@ def install_wordpress(tag):
     with settings(warn_only=True):
         try:
             print(colors.cyan('Downloading WordPress %s' % tag))
-            local('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag)
+            _capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag, type='local')
 
             print(colors.cyan('Unzipping...'))
-            local('unzip %s.zip' % tag)
+            _capture('unzip %s.zip' % tag, type='local')
 
             print(colors.cyan('Copying new files to our project directory...'))
-            local('rsync -ru WordPress-%s/* .' % tag)
+            _capture('rsync -ru WordPress-%s/* .' % tag, type='local')
         finally:
             print(colors.cyan('Cleaning up...'))
-            local('rm -Rf %s.zip' % tag)
-            local('rm -Rf WordPress-%s' % tag)
+            _capture('rm -Rf %s.zip' % tag, type='local')
+            _capture('rm -Rf WordPress-%s' % tag, type='local')
 
         print(colors.cyan('Finished upgrading WordPress!'))
 
@@ -109,18 +113,24 @@ def _initial_deploy(dest_path):
         if env.verbose:
             cmd = 'git ftp init -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+            with hide('running', 'warnings'):
+                ret = local(cmd)
         else:
             cmd = 'git ftp init --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
-        ret = local(cmd)
+            with hide('running', 'stderr', 'warnings'):
+                ret = local(cmd)
     else:
         if env.verbose:
             cmd = 'git ftp init -v --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+            with hide('running', 'warnings'):
+                ret = local(cmd)
         else:
             cmd = 'git ftp init --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
-        ret = local(cmd)
+            with hide('running', 'stderr', 'warnings'):
+                ret = local(cmd)
     return ret
 
 
@@ -129,18 +139,24 @@ def _deploy(dest_path):
         if env.verbose:
             cmd = 'git ftp push -v --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+            with hide('running', 'warnings'):
+                ret = local(cmd)
         else:
             cmd = 'git ftp push --dry-run --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
-        ret = local(cmd)
+            with hide('running', 'stderr', 'warnings'):
+                ret = local(cmd)
     else:
         if env.verbose:
             cmd = 'git ftp push -v --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
+            with hide('running', 'warnings'):
+                ret = local(cmd)
         else:
             cmd = 'git ftp push --user "%s" --passwd "%s" sftp://%s/%s' % (
                 env.user, env.password, env.host_string, os.path.normpath(dest_path) + os.sep)
-        ret = local(cmd)
+            with hide('running', 'stderr', 'warnings'):
+                ret = local(cmd)
     return ret
 
 
