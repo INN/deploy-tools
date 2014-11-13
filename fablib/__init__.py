@@ -12,7 +12,7 @@ from wordpress.migrations import *
 
 from hipchat import notify_hipchat as _notify_hipchat
 from helpers import _search_replace as search_replace
-from unittests import setup_tests, run_tests
+from unittests import setup_tests, run_tests, install_phpunit
 
 # Deployment related
 env.path = ''
