@@ -1,6 +1,6 @@
 import os
 
-from fabric.api import local, task, hide
+from fabric.api import local, task, hide, run, sudo
 from fabric.state import env
 from fabric import colors
 from fabric.contrib.console import confirm
@@ -148,4 +148,3 @@ def capture(cmd, type='local'):
         if type is 'sudo':
             result = sudo(cmd)
         return result
-

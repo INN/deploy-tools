@@ -10,6 +10,7 @@ import vagrant
 import wp
 
 from hipchat import notify_hipchat
+from helpers import capture
 
 # Deployment related
 env.path = ''
@@ -75,6 +76,19 @@ def verbose():
     Show verbose output when running deploy commands
     """
     env.verbose = True
+
+
+@task
+def dev():
+    """
+    Work on development (vagrant) environment
+    """
+    env.user = 'vagrant'
+    env.settings = 'vagrant'
+    env.hosts = [env.vagrant_host, ]
+    env.path = '/vagrant'
+    result = capture('vagrant ssh-config | grep IdentityFile')
+    env.key_filename = result.split()[1]
 
 
 @task

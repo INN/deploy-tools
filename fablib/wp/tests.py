@@ -1,6 +1,6 @@
 import json
 
-from fabric.api import require, settings, task, put, hide
+from fabric.api import require, settings, task, put, hide, cd, run as run_cmd, sudo, shell_env
 from fabric.state import env
 from fabric import colors
 
@@ -64,24 +64,24 @@ def run(name):
             directory = get_path('theme', name)
 
     with cd(directory), shell_env(WP_TESTS_DIR=WP_TESTS_DIR):
-        run('phpunit')
+        run_cmd('phpunit')
 
 
 @task
 def install_phpunit():
     """
-    Install phpunit on vagrant box
+    Install phpunit on target environment
     """
-    require('settings', provided_by=['vagrant', ])
-    run('wget https://phar.phpunit.de/phpunit.phar')
-    run('chmod +x phpunit.phar')
+    require('settings', provided_by=['dev', 'staging', 'production'])
+    run_cmd('wget https://phar.phpunit.de/phpunit.phar')
+    run_cmd('chmod +x phpunit.phar')
     sudo('mv phpunit.phar /usr/local/bin/phpunit')
 
 
 def scaffold_tests(dir=None):
     with cd(dir), settings(warn_only=True), shell_env(WP_TESTS_DIR=WP_TESTS_DIR):
         with hide('running', 'stderr', 'stdout', 'warnings', 'debug'):
-            tests_dir = run('ls tests')
+            tests_dir = run_cmd('ls tests')
             if tests_dir.find('No such file or directory') > -1:
                 print(colors.cyan("Copying essential test files..."))
 
@@ -96,7 +96,7 @@ def scaffold_tests(dir=None):
                 print(colors.yellow(
                     "Skip copying essential test files ('tests' directory already exists)..."))
 
-            config_file = run('ls phpunit.xml')
+            config_file = run_cmd('ls phpunit.xml')
             if config_file.find('No such file or directory') > -1:
                 print(colors.green("Copying base phpunit.xml..."))
                 put('tools/fablib/etc/phpunit-sample.xml', 'phpunit.xml', use_sudo=True)
@@ -104,12 +104,12 @@ def scaffold_tests(dir=None):
                 print(colors.yellow("Skip copying phpunit.xml (file already exists)..."))
 
             # Install the WP test framework
-            framework_dir = run('ls %s' % WP_TESTS_DIR)
+            framework_dir = run_cmd('ls %s' % WP_TESTS_DIR)
             if framework_dir.find('No such file or directory') > -1:
                 print(colors.green("Installing the WordPress testing framework..."))
                 vagrant.destroy_db(WP_TEST_DB)
                 put('tools/fablib/etc/install-wp-tests.sh', '/tmp/install-wp-tests.sh', use_sudo=True)
-                run('bash /tmp/install-wp-tests.sh %s root root localhost latest' % WP_TEST_DB)
+                run_cmd('bash /tmp/install-wp-tests.sh %s root root localhost latest' % WP_TEST_DB)
             else:
                 print(colors.yellow("Skip install of WordPress testing framework (already installed)..."))
 
