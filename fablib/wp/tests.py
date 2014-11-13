@@ -1,6 +1,6 @@
 import json
 
-from fabric.api import require, settings, task, put, hide, cd, run as run_cmd, sudo, shell_env
+from fabric.api import cd, hide, put, require, run as run_cmd, settings, shell_env, sudo, task
 from fabric.state import env
 from fabric import colors
 

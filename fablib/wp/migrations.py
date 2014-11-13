@@ -12,7 +12,6 @@ from getpass import getpass as _getpass
 
 from .. import local as local_commands
 
-
 NETWORK_TABLES = ['wp_users', 'wp_usermeta', ]
 BLOG_TABLES = [
     'wp_%s_commentmeta', 'wp_%s_comments', 'wp_%s_links', 'wp_%s_options', 'wp_%s_postmeta',

@@ -4,46 +4,13 @@ from fabric.api import local, require, settings, task, get, hide
 from fabric.state import env
 from fabric import colors
 
-from .. import helpers
+from ..helpers import capture
 
 import maintenance
 import migrations
 import tests
 
 from StringIO import StringIO
-
-
-def deploy():
-    """
-    Deploy local copy of repository to target WP Engine environment.
-    """
-    require('settings', provided_by=["production", "staging", ])
-
-    if env.branch != 'rollback':
-        rollback_sha1 = get_rollback_sha1()
-        if rollback_sha1:
-            print(colors.cyan("Setting rollback point..."))
-            helpers.capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1, type='local')
-            helpers.capture('git fetch', type='local')
-        else:
-            print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
-
-    print(colors.cyan("Checking out branch: %s" % env.branch))
-    helpers.capture('git checkout %s' % env.branch, type='local')
-    helpers.capture('git submodule update --init --recursive', type='local')
-
-    with settings(warn_only=True):
-        print(colors.cyan("Deploying..."))
-        ret = do_deploy(env.path)
-
-        if ret.return_code and ret.return_code > 0:
-            if ret.return_code in [8, 5, ]:
-                print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
-                ret = initial_deploy(env.path)
-                if ret.return_code and ret.return_code > 0:
-                    print(colors.red("An error occurred..."))
-                    if not env.verbose:
-                        print(colors.yellow('Try deploying with `verbose` for more information...'))
 
 
 @task
@@ -54,15 +21,15 @@ def verify_prerequisites():
     with settings(warn_only=True):
 
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
-        ret = helpers.capture('curl -V | grep sftp')
+        ret = capture('curl -V | grep sftp')
         if ret.return_code == 1:
             import sys
             if sys.platform.startswith('darwin'):
                 print(colors.yellow(
                     'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
-                helpers.capture('brew update', type='local')
-                helpers.capture('brew install curl --with-ssh', type='local')
-                helpers.capture('brew link --force curl', type='local')
+                capture('brew update', type='local')
+                capture('brew install curl --with-ssh', type='local')
+                capture('brew link --force curl', type='local')
             else:
                 print(colors.red(
                     'Your version of curl does not support sftp. You may have to recompile it with sftp support. See the deploy-tools README for more information.'
@@ -71,12 +38,12 @@ def verify_prerequisites():
             print(colors.green('Your installation of curl supports sftp!'))
 
         print(colors.cyan('Ensuring you have git-ftp installed...'))
-        ret = helpers.capture('git ftp --version')
+        ret = capture('git ftp --version')
         if ret.return_code == 1:
             print(colors.yellow(
                 'You do not have git-ftp installed. Attempting installation via brew...'))
-            helpers.capture('brew update', type='local')
-            helpers.capture('brew install git-ftp', type='local')
+            capture('brew update', type='local')
+            capture('brew install git-ftp', type='local')
         else:
             print(colors.green('You have git-ftp installed!'))
 
@@ -92,17 +59,17 @@ def install(tag):
     with settings(warn_only=True):
         try:
             print(colors.cyan('Downloading WordPress %s' % tag))
-            helpers.capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag, type='local')
+            capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag, type='local')
 
             print(colors.cyan('Unzipping...'))
-            helpers.capture('unzip %s.zip' % tag, type='local')
+            capture('unzip %s.zip' % tag, type='local')
 
             print(colors.cyan('Copying new files to our project directory...'))
-            helpers.capture('rsync -ru WordPress-%s/* .' % tag, type='local')
+            capture('rsync -ru WordPress-%s/* .' % tag, type='local')
         finally:
             print(colors.cyan('Cleaning up...'))
-            helpers.capture('rm -Rf %s.zip' % tag, type='local')
-            helpers.capture('rm -Rf WordPress-%s' % tag, type='local')
+            capture('rm -Rf %s.zip' % tag, type='local')
+            capture('rm -Rf WordPress-%s' % tag, type='local')
 
         print(colors.cyan('Finished upgrading WordPress!'))
 
@@ -117,6 +84,39 @@ def fetch_sql_dump():
 
 
 # Utilities
+def deploy():
+    """
+    Deploy local copy of repository to target WP Engine environment.
+    """
+    require('settings', provided_by=["production", "staging", ])
+
+    if env.branch != 'rollback':
+        rollback_sha1 = get_rollback_sha1()
+        if rollback_sha1:
+            print(colors.cyan("Setting rollback point..."))
+            capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1, type='local')
+            capture('git fetch', type='local')
+        else:
+            print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
+
+    print(colors.cyan("Checking out branch: %s" % env.branch))
+    capture('git checkout %s' % env.branch, type='local')
+    capture('git submodule update --init --recursive', type='local')
+
+    with settings(warn_only=True):
+        print(colors.cyan("Deploying..."))
+        ret = do_deploy(env.path)
+
+        if ret.return_code and ret.return_code > 0:
+            if ret.return_code in [8, 5, ]:
+                print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
+                ret = initial_deploy(env.path)
+                if ret.return_code and ret.return_code > 0:
+                    print(colors.red("An error occurred..."))
+                    if not env.verbose:
+                        print(colors.yellow('Try deploying with `verbose` for more information...'))
+
+
 def initial_deploy(dest_path):
     if env.dry_run:
         if env.verbose:
