@@ -64,26 +64,38 @@ def run_tests(name):
 
 def scaffold_tests(dir=None):
     with cd(dir), settings(warn_only=True), shell_env(WP_TESTS_DIR=WP_TESTS_DIR):
-        vagrant_destroy_db(WP_TEST_DB)
         with hide('running', 'stderr', 'stdout', 'warnings', 'debug'):
-            bin_dir = run('ls bin')
-            if bin_dir.find('No such file or directory') > -1:
-                sudo('mkdir bin')
-
             tests_dir = run('ls tests')
             if tests_dir.find('No such file or directory') > -1:
-                sudo('mkdir tests')
+                print(colors.cyan("Copying essential test files..."))
 
-            # Install some basic sample test files
-            print(colors.cyan("Installing essential test files..."))
-            put('tools/fablib/etc/phpunit-sample.xml', 'phpunit.xml', use_sudo=True)
-            put('tools/fablib/etc/test-sample.php', 'tests/test-sample.php', use_sudo=True)
-            put('tools/fablib/etc/bootstrap-sample.php', 'tests/bootstrap.php', use_sudo=True)
+                sudo('mkdir tests')
+                print(colors.cyan("Created 'tests' directory..."))
+
+                # Install some basic sample test files
+                print(colors.green("Copying test-sample.php and bootstrap.php"))
+                put('tools/fablib/etc/test-sample.php', 'tests/test-sample.php', use_sudo=True)
+                put('tools/fablib/etc/bootstrap-sample.php', 'tests/bootstrap.php', use_sudo=True)
+            else:
+                print(colors.yellow(
+                    "Skip copying essential test files ('tests' directory already exists)..."))
+
+            config_file = run('ls phpunit.xml')
+            if config_file.find('No such file or directory') > -1:
+                print(colors.green("Copying base phpunit.xml..."))
+                put('tools/fablib/etc/phpunit-sample.xml', 'phpunit.xml', use_sudo=True)
+            else:
+                print(colors.yellow("Skip copying phpunit.xml (file already exists)..."))
 
             # Install the WP test framework
-            print(colors.cyan("Installing the WordPress testing framework..."))
-            put('tools/fablib/etc/install-wp-tests.sh', 'bin/install-wp-tests.sh', use_sudo=True)
-            run('bash bin/install-wp-tests.sh %s root root localhost latest' % WP_TEST_DB)
+            framework_dir = run('ls %s' % WP_TESTS_DIR)
+            if framework_dir.find('No such file or directory') > -1:
+                print(colors.green("Installing the WordPress testing framework..."))
+                vagrant_destroy_db(WP_TEST_DB)
+                put('tools/fablib/etc/install-wp-tests.sh', '/tmp/install-wp-tests.sh', use_sudo=True)
+                run('bash /tmp/install-wp-tests.sh %s root root localhost latest' % WP_TEST_DB)
+            else:
+                print(colors.yellow("Skip install of WordPress testing framework (already installed)..."))
 
 
 def get_path(type=None, name=None):
