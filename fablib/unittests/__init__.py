@@ -58,7 +58,7 @@ def run_tests(name):
         elif test in themes:
             directory = get_path('theme', name)
 
-    with cd(directory):
+    with cd(directory), shell_env(WP_TESTS_DIR=WP_TESTS_DIR):
         run('phpunit')
 
 

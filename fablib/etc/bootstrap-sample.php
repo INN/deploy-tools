@@ -1,7 +1,7 @@
 <?php
 
-$wp_test_dir = getenv('WP_TEST_DIR');
-require_once $wp_test_dir . '/includes/functions.php';
+$wp_tests_dir = getenv('WP_TESTS_DIR');
+require_once $wp_tests_dir . '/includes/functions.php';
 
 function _manually_load_environment() {
 	// Add your theme
@@ -14,4 +14,4 @@ function _manually_load_environment() {
 }
 tests_add_filter('muplugins_loaded', '_manually_load_environment');
 
-require $wp_test_dir . '/includes/bootstrap.php';
+require $wp_tests_dir . '/includes/bootstrap.php';
