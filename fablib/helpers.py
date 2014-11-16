@@ -135,16 +135,16 @@ def require_env_var(name):
         raise error
 
 
-def capture(cmd, type='local'):
+def capture(cmd, cmd_type='local'):
     """
     Capture output of a command and suppress messages that Fabric is
     running the command. (e.g. "[hostname] run: ...")
     """
     with hide('running', 'stdout'):
-        if type is 'local':
+        if cmd_type is 'local':
             result = local(cmd, capture=True)
-        if type is 'run':
+        if cmd_type is 'run':
             result = run(cmd)
-        if type is 'sudo':
+        if cmd_type is 'sudo':
             result = sudo(cmd)
         return result
