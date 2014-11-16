@@ -11,23 +11,28 @@ DB_PASS=$3
 DB_HOST=${4-localhost}
 WP_VERSION=${5-latest}
 
-echo "$WP_TESTS_DIR\n";
 WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
-WP_CORE_DIR=/tmp/wordpress/
+WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
 
 set -ex
 
 install_wp() {
-	mkdir -p $WP_CORE_DIR
+  if [ $WP_CORE_DIR == '/tmp/wordpress/' ]
+  then
+    mkdir -p $WP_CORE_DIR
+  fi
 
-	if [ $WP_VERSION == 'latest' ]; then 
+	if [ $WP_VERSION == 'latest' ]; then
 		local ARCHIVE_NAME='latest'
 	else
 		local ARCHIVE_NAME="wordpress-$WP_VERSION"
 	fi
 
-	wget -nv -O /tmp/wordpress.tar.gz http://wordpress.org/${ARCHIVE_NAME}.tar.gz
-	tar --strip-components=1 -zxmf /tmp/wordpress.tar.gz -C $WP_CORE_DIR
+  if [ $WP_CORE_DIR == '/tmp/wordpress/' ]
+  then
+    wget -nv -O /tmp/wordpress.tar.gz http://wordpress.org/${ARCHIVE_NAME}.tar.gz
+    tar --strip-components=1 -zxmf /tmp/wordpress.tar.gz -C $WP_CORE_DIR
+  fi
 
 	wget -nv -O $WP_CORE_DIR/wp-content/db.php https://raw.github.com/markoheijnen/wp-mysqli/master/db.php
 }
@@ -43,7 +48,12 @@ install_test_suite() {
 	# set up testing suite
 	mkdir -p $WP_TESTS_DIR
 	cd $WP_TESTS_DIR
-	svn co --quiet http://develop.svn.wordpress.org/trunk/tests/phpunit/includes/
+  if [ $WP_VERSION != 'latest' ]
+  then
+    svn co --quiet http://develop.svn.wordpress.org/tags/$WP_VERSION/tests/phpunit/includes/
+  else
+    svn co --quiet http://develop.svn.wordpress.org/trunk/tests/phpunit/includes/
+  fi
 
 	wget -nv -O wp-tests-config.php http://develop.svn.wordpress.org/trunk/wp-tests-config-sample.php
 	sed $ioption "s:dirname( __FILE__ ) . '/src/':'$WP_CORE_DIR':" wp-tests-config.php
