@@ -2,6 +2,8 @@ local_fabfile.py
 .vagrant
 wp-content/themes/twenty*
 *.sql
+data/*
+wp-scripts/*
 
 *~
 .DS_Store
