@@ -8,6 +8,7 @@ from fabric import colors
 import local
 import vagrant
 import wp
+import helpers
 
 from hipchat import notify_hipchat
 from helpers import capture

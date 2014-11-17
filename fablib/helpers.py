@@ -7,6 +7,7 @@ from fabric.contrib.console import confirm
 
 
 # Database utilities
+@task
 def search_replace(file=None, search=None, replacement="vagrant.dev"):
     """
     Search for and replace string in a file. Meant to be used with WP databases where
@@ -14,7 +15,7 @@ def search_replace(file=None, search=None, replacement="vagrant.dev"):
 
     Example:
 
-        $ fab search_replace_domain:dump.sql,"inndev.wpengine.com","vagrant.dev"
+        $ fab search_replace:dump.sql,"inndev.wpengine.com","vagrant.dev"
     """
     file = os.path.expanduser(file)
     throwaway, ext = os.path.splitext(file)

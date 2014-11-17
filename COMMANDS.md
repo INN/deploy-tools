@@ -175,7 +175,7 @@ Runs PHPUnit tests for the specified theme or plugin. Displays results of the te
 
 Deploy the most recent rollback point.
 
-#### search\_replace:file,search,replacement
+#### helpers.search\_replace:file,search,replacement
 
 This function is meant to help clean up a database dump so that it can be used for local development on the Vagrant box.
 
