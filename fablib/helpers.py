@@ -7,7 +7,7 @@ from fabric.contrib.console import confirm
 
 
 # Database utilities
-@task
+@task(alias='sr')
 def search_replace(file=None, search=None, replacement="vagrant.dev"):
     """
     Search for and replace string in a file. Meant to be used with WP databases where
