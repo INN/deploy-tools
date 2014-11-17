@@ -7,7 +7,6 @@ from fabric.api import task
 Base configuration
 """
 env.project_name = ''       # name for the project.
-env.file_path = '.'         # path (relative to this file).
 
 """
 Add HipChat info to send a message to a room when new code has been deployed.

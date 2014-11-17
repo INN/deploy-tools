@@ -55,14 +55,6 @@ def rollback():
 
 
 @task
-def path(path):
-    """
-    Specify the project's path on remote server.
-    """
-    env.path = path
-
-
-@task
 def dry_run():
     """
     Don't transfer files, just output what would happen during a real deployment.

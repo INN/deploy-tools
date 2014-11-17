@@ -43,12 +43,11 @@ Then:
     $ pip install -r requirements.txt
     $ fab verify_prerequisites
 
-If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script uses brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/). 
+If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script uses brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/).
 
-Now edit the example `fabfile.py` to adjust the settings for your project. Add a project name and define the file_path:
+Now edit the example `fabfile.py` to adjust the settings for your project:
 
     $ env.project_name = ''   # name for the project
-    $ env.file_path = '.'     # path (relative to this file)
 
 You'll also need to supply the ssh environment variables for `production` and `staging` (or any other enviornments).
 
