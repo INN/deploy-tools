@@ -6,7 +6,7 @@ A box of tools for deploying INN's WordPress sites to WPEngine. Based on Chicago
 
 ## Prerequisites
 
-You'll need Python (versioins 2.5 to 2.7) and [pip](https://pip.pypa.io/en/latest/installing.html) to get started with these tools. [Virtualenv](https://virtualenv.pypa.io/en/latest/virtualenv.html) and [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/3.4) are not required, but using them is a good practice, so we'll use them here.
+You'll need Python (versions 2.5 to 2.7) and [pip](https://pip.pypa.io/en/latest/installing.html) to get started with these tools. [Virtualenv](https://virtualenv.pypa.io/en/latest/virtualenv.html) and [virtualenvwrapper](https://pypi.python.org/pypi/virtualenvwrapper/3.4) are not required, but using them is a good practice, so we'll use them here.
 
 Set up python dev environment:
 
