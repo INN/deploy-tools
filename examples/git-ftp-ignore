@@ -4,3 +4,4 @@ Vagrantfile
 requirements.txt
 tests/*
 phpunit.xml
+.travis.yml
