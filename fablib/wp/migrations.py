@@ -259,27 +259,20 @@ def _wp_users_table_sql(db):
 
         # If the user data hasn't been inserted, insert it.
         existing_user_query = "SELECT ID FROM existing_users WHERE user_login = '%s' LIMIT 1" % (user_login, )
-        ret = ret + """
-INSERT INTO wp_users (%s)
-SELECT %s
-FROM DUAL WHERE NOT EXISTS (%s);
-""" % (column_names_str, values_str, existing_user_query)
+        ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);" % (
+            column_names_str, values_str, existing_user_query)
 
         # Update the posts table post_author value
-        ret = ret + """
-UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (%s) AND post_author = %s;
-""" % (env.new_blog_id, new_user_id, existing_user_query, old_user_id)
+        ret = ret + "UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (%s) AND post_author = %s;" % (
+            env.new_blog_id, new_user_id, existing_user_query, old_user_id)
 
         # Update the comments table user_id value
-        ret = ret + """
-UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (%s) and user_id = %s;
-""" % (env.new_blog_id, new_user_id, existing_user_query, old_user_id)
+        ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (%s) and user_id = %s;" % (
+            env.new_blog_id, new_user_id, existing_user_query, old_user_id)
 
         # If the user data exists, we want to update existing data
         values_str = ', '.join([value for value in values_update])
-        ret = ret + """
-UPDATE wp_users SET %s WHERE ID = (%s);
-""" % (values_str, existing_user_query)
+        ret = ret + "UPDATE wp_users SET %s WHERE ID = (%s);" % (values_str, existing_user_query)
 
     return ret
 
@@ -326,11 +319,7 @@ def _wp_usermeta_table_sql(db):
 
         values_str = ', '.join(values)
 
-        nickname_query = """
-            SELECT meta_value FROM wp_usermeta
-            WHERE user_id = %s AND meta_key = 'nickname'
-            LIMIT 1
-        """ % data['user_id']
+        nickname_query = "SELECT meta_value FROM wp_usermeta WHERE user_id = %s AND meta_key = 'nickname' LIMIT 1" % data['user_id']
         db.query(nickname_query)
         nickname_result = db.store_result()
         nickname_row = nickname_result.fetch_row(1, 1)
@@ -343,18 +332,14 @@ def _wp_usermeta_table_sql(db):
         existing_usermeta_query = "SELECT user_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
 
         # Again, if the data doesn't exist, insert it.
-        ret = ret + """
-INSERT INTO wp_usermeta (%s)
-SELECT %s
-FROM DUAL WHERE NOT EXISTS (%s);
-""" % (column_names_str, values_str, existing_usermeta_query)
+        ret = ret + "INSERT INTO wp_usermeta (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);" % (
+            column_names_str, values_str, existing_usermeta_query)
 
         # If the user data exists, we want to update/replace existing data
         values_str = ', '.join([value for value in values_update])
         meta_key = data['meta_key']
 
-        ret = ret + """
-UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';
-""" % (values_str, existing_usermeta_query, meta_key)
+        ret = ret + "UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';" % (
+            values_str, existing_usermeta_query, meta_key)
 
     return ret
