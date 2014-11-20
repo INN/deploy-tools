@@ -127,6 +127,18 @@ CREATE TEMPORARY TABLE IF NOT EXISTS existing_users SELECT ID, user_login FROM w
 DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
 CREATE TEMPORARY TABLE IF NOT EXISTS existing_usermeta SELECT meta_value, umeta_id, user_id FROM wp_usermeta WHERE meta_key = 'nickname';
 
+DROP FUNCTION IF EXISTS existingUser;
+DELIMITER //
+CREATE FUNCTION existingUser(ul VARCHAR(60))
+RETURNS BIGINT
+DETERMINISTIC
+BEGIN
+  DECLARE ret BIGINT;
+  SET ret = (SELECT ID FROM existing_users WHERE user_login = ul LIMIT 1);
+  RETURN ret;
+END//
+DELIMITER ;
+
 SET @newUmetaID = (SELECT max(umeta_id) FROM wp_usermeta);
 SET @newUserID = (SELECT max(ID) FROM wp_users);
 SET @siteUrl = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option_name = 'siteurl');
@@ -148,10 +160,12 @@ UPDATE wp_%(new_blog_id)s_options SET option_value = "wp-content/blogs.dir/%(new
 UPDATE wp_%(new_blog_id)s_options SET option_name = 'wp_%(new_blog_id)s_user_roles' WHERE option_name = 'wp_user_roles';
 """ % env
 
-        # Drop the temporary tables
+        # Drop the temporary tables and stored functions
         content = content + """
 DROP TEMPORARY TABLE IF EXISTS existing_users;
 DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
+
+DROP FUNCTION IF EXISTS existingUser;
 """
         f.write(content)
 
@@ -181,7 +195,23 @@ def _get_blog_tables_sql(db):
     ret = ''
     for table in BLOG_TABLES:
         table = table % env.new_blog_id
-        query = "select * from %s;"  % (table, );
+
+        if table == 'wp_%s_posts' % env.new_blog_id:
+            # Only migrate standard post types, ignoring revisions
+            query = "select * from %s where post_type in ('nav_menu_item', 'attachment', 'page', 'post');" % (table, )
+        elif table == 'wp_%s_postmeta' % env.new_blog_id:
+            # Ignore meta for post_type = 'revision'
+            query = "select * from %s where post_id not in (select ID from wp_%s_posts where post_type = 'revision');" % (table, env.new_blog_id)
+        elif table == 'wp_%s_comments' % env.new_blog_id:
+            # Only migrate non-spam comments
+            query = "select * from %s where comment_approved not in ('spam');" % (table, )
+        elif table == ' wp_%s_commentmeta' % env.new_blog_id:
+            # Ignore meta for comment_approved = 'spam'
+            query = "select * from %s where comment_ID not in (select comment_ID from wp_%s_comments where comment_approved = 'spam');" % (table, env.new_blog_id)
+        else:
+            # Get everything for other tables
+            query = "select * from %s;"  % (table, );
+
         db.query(query)
         result = db.store_result()
         for idx in xrange(0, result.num_rows()):
@@ -189,7 +219,9 @@ def _get_blog_tables_sql(db):
             data = row[0]
             values = []
             for key, value in data.iteritems():
-                if key == 'user_id':
+                if key == 'post_author':
+                    values.append("%s=@newUserID + %s" % (key, value))
+                elif key == 'user_id':
                     values.append("%s=@newUserID + %s" % (key, value))
                 elif type(value) == str:
                     values.append("%s='%s'" % (key, db.escape_string(value)))
@@ -258,21 +290,22 @@ def _wp_users_table_sql(db):
         user_login = data['user_login']
 
         # If the user data hasn't been inserted, insert it.
-        existing_user_query = "SELECT ID FROM existing_users WHERE user_login = '%s' LIMIT 1" % (user_login, )
-        ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);" % (
-            column_names_str, values_str, existing_user_query)
-
-        # Update the posts table post_author value
-        ret = ret + "UPDATE wp_%s_posts SET post_author = %s WHERE NOT EXISTS (%s) AND post_author = %s;" % (
-            env.new_blog_id, new_user_id, existing_user_query, old_user_id)
-
-        # Update the comments table user_id value
-        ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE NOT EXISTS (%s) and user_id = %s;" % (
-            env.new_blog_id, new_user_id, existing_user_query, old_user_id)
+        existing_user = "existingUser('%s')" % (user_login, )
+        ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (SELECT %s);\n" % (
+            column_names_str, values_str, existing_user)
 
         # If the user data exists, we want to update existing data
         values_str = ', '.join([value for value in values_update])
-        ret = ret + "UPDATE wp_users SET %s WHERE ID = (%s);" % (values_str, existing_user_query)
+        ret = ret + "UPDATE wp_users SET %s WHERE ID = %s;\n" % (values_str, existing_user)
+
+        # Change the post_author value from "@newUserID + [old_id]" to whatever
+        # the existing user ID is determined to be.
+        ret = ret + "UPDATE wp_%s_posts SET post_author = %s WHERE EXISTS (SELECT %s) AND post_author = %s;\n" % (
+            env.new_blog_id, existing_user, existing_user, new_user_id)
+
+        # Do the same as above but for comments
+        ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE EXISTS (SELECT %s) AND user_id = %s;\n" % (
+            env.new_blog_id, existing_user, existing_user, new_user_id)
 
     return ret
 
@@ -332,14 +365,14 @@ def _wp_usermeta_table_sql(db):
         existing_usermeta_query = "SELECT user_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
 
         # Again, if the data doesn't exist, insert it.
-        ret = ret + "INSERT INTO wp_usermeta (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);" % (
+        ret = ret + "INSERT INTO wp_usermeta (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);\n" % (
             column_names_str, values_str, existing_usermeta_query)
 
         # If the user data exists, we want to update/replace existing data
         values_str = ', '.join([value for value in values_update])
         meta_key = data['meta_key']
 
-        ret = ret + "UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';" % (
+        ret = ret + "UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';\n" % (
             values_str, existing_usermeta_query, meta_key)
 
     return ret
