@@ -1,0 +1,17 @@
+title,body,labels
+Browser testing: IE9,,
+Browser testing: IE10,,
+Browser testing: IE11,,
+Browser testing: Latest Firefox,,
+Browser testing: Latest Chrome,,
+Browser testing: Desktop Safari,,
+Device testing: iPhone Safari,,
+Device testing: iPhone Chrome/Webkit,,
+Device testing: iPad,,
+Device testing: Android phone,,
+Device testing: Android tablet,,
+Add project to team projects list,,
+Schedule iteration reviews,,Project Management
+Schedule sprint planning meetings,,Project Management
+Schedule sprint retrospectives,,Project Management
+Setup Hipchat service hook on github,,
