@@ -1,17 +1,10 @@
-import io
 import os
-import re
 import subprocess
-import sys
-import time
 
-from functools import partial
 from multiprocessing.dummy import Pool
-from multiprocessing import Process
 
 from fabric import colors
-from fabric.api import cd, local, task
-from fabric.state import env
+from fabric.api import local, task
 
 IGNORE = ['.git', '.svn', 'node_modules']
 
