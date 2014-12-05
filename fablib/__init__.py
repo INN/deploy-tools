@@ -9,6 +9,7 @@ import local
 import vagrant
 import wp
 import helpers
+import assets
 
 from hipchat import notify_hipchat
 from helpers import capture
