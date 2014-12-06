@@ -1,3 +1,4 @@
+import time
 import os
 import subprocess
 
@@ -25,9 +26,9 @@ def bootstrap(directory='.'):
 def watch(directory='.'):
     compile(directory, watch=True)
 
+
 @task
 def compile(directory='.', watch=False):
-    pool = Pool()
     tasks = []
 
     for root, dirs, files in os.walk(directory):
@@ -42,33 +43,47 @@ def compile(directory='.', watch=False):
         for path in paths:
             tasks.append((path, watch))
 
-    pool.map_async(_compile, tasks)
+    """
+    TODO: Find a more elegant way of settings the max processes for `pool`.
+
+    Since we're essentially using a Pool to check the status of our Grunt commands, this shouldn't
+    cause any major performance issues, but it would be nice to use a Queue, especially when we're
+    not watching for changes, but simply compiling.
+    """
+    pool = Pool(len(tasks))
+    pool.map_async(_compile, tasks, callback=_get_output)
     pool.close()
     pool.join()
 
     if watch:
         try:
             while True:
-                pass
+                time.sleep(1)
         except KeyboardInterrupt:
             pool.terminate()
             print colors.red("Exiting...")
 
 
+def _get_output(results):
+    sep = '----------'
+    for path, messages, result in results:
+        print sep, colors.cyan("Log for path: %s" % path), sep
+        for message in messages:
+            print message
+
+
 def _compile(args):
     path, watch = args
+    messages = []
     if watch:
         print(colors.cyan('Watching files in: %s' % path))
         result = subprocess.Popen(['grunt', 'watch'], cwd=path)
     else:
-        sep = '----------'
         print(colors.cyan('Compiling files in: %s' % path))
         result = subprocess.Popen(['grunt', 'less'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         result.wait()
         if result.stdout:
-            print sep, colors.cyan("Log for path: %s" % path), sep
-            print result.stdout.read()
+            messages.append(result.stdout.read())
         if result.stderr:
-            print sep, colors.red("Errors for path: %s" % path), sep
-            print result.stderr.read()
-    return result
+            messages.appen(result.stderr.read())
+    return path, messages, result
