@@ -51,7 +51,10 @@ def compile(directory='.', watch=False):
     not watching for changes, but simply compiling.
     """
     pool = Pool(len(tasks))
-    pool.map_async(_compile, tasks, callback=_get_output)
+    if watch:
+        pool.map_async(_compile, tasks)
+    else:
+        pool.map_async(_compile, tasks, callback=_get_output)
     pool.close()
     pool.join()
 
