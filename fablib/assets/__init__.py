@@ -27,7 +27,7 @@ def watch(directory='.'):
     compile(directory, watch=True)
 
 
-@task
+@task(default=True)
 def compile(directory='.', watch=False):
     tasks = []
 
