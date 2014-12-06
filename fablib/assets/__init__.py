@@ -1,12 +1,13 @@
 import os
 import subprocess
 
-from multiprocessing.dummy import Pool
+from multiprocessing import Pool
 
 from fabric import colors
 from fabric.api import local, task
 
 IGNORE = ['.git', '.svn', 'node_modules']
+
 
 @task
 def bootstrap(directory='.'):
@@ -22,12 +23,12 @@ def bootstrap(directory='.'):
 
 @task
 def watch(directory='.'):
-    compile(directory, wait=True)
+    compile(directory, watch=True)
 
 @task
-def compile(directory='.', wait=False):
+def compile(directory='.', watch=False):
     pool = Pool()
-    tasks = {}
+    tasks = []
 
     for root, dirs, files in os.walk(directory):
         skip = bool([pattern for pattern in IGNORE if root.find(pattern) > 0])
@@ -39,27 +40,35 @@ def compile(directory='.', wait=False):
             paths.append(root)
 
         for path in paths:
-            tasks.update({ path: pool.apply(_compile, args=([path, wait])) })
+            tasks.append((path, watch))
 
-    try:
-        pool.close()
-        pool.join()
-        os.wait()
+    pool.map_async(_compile, tasks)
+    pool.close()
+    pool.join()
 
-        # Spit out anything that was sent to STDOUT while our grunt commands ran
-        sep = '----------'
-        for path, task in tasks.iteritems():
-            print sep, colors.cyan('Log for path: %s' % path), sep
-            print task.stdout.read()
-    except KeyboardInterrupt:
-        print(colors.red('Keyboard Interrupt. Exiting...'))
-        pool.terminate()
+    if watch:
+        try:
+            while True:
+                pass
+        except KeyboardInterrupt:
+            pool.terminate()
+            print colors.red("Exiting...")
 
 
-def _compile(path, wait):
-    if wait:
+def _compile(args):
+    path, watch = args
+    if watch:
         print(colors.cyan('Watching files in: %s' % path))
-        return subprocess.Popen(['grunt watch'], shell=True, cwd=path)
+        result = subprocess.Popen(['grunt', 'watch'], cwd=path)
     else:
+        sep = '----------'
         print(colors.cyan('Compiling files in: %s' % path))
-        return subprocess.Popen(['grunt less'], shell=True, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.Popen(['grunt', 'less'], cwd=path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result.wait()
+        if result.stdout:
+            print sep, colors.cyan("Log for path: %s" % path), sep
+            print result.stdout.read()
+        if result.stderr:
+            print sep, colors.red("Errors for path: %s" % path), sep
+            print result.stderr.read()
+    return result
