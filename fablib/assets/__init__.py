@@ -12,6 +12,10 @@ IGNORE = ['.git', '.svn', 'node_modules']
 
 @task
 def bootstrap(directory='.'):
+    """
+    Recrusively search for Gruntfile.js and package.json, run `npm install` in directories where
+    those files are present.
+    """
     for root, dirs, files in os.walk(directory):
         skip = bool([pattern for pattern in IGNORE if root.find(pattern) > 0])
         if skip:
@@ -24,11 +28,19 @@ def bootstrap(directory='.'):
 
 @task
 def watch(directory='.'):
+    """
+    Search for a Gruntfile.js and run the `grunt watch` command in the directory where the Gruntfile
+    is present.
+    """
     compile(directory, watch=True)
 
 
 @task(default=True)
 def compile(directory='.', watch=False):
+    """
+    Search for a Gruntfile.js and run the `grunt less` command in the directory where the Gruntfile
+    is present.
+    """
     tasks = []
 
     for root, dirs, files in os.walk(directory):
