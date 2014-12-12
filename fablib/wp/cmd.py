@@ -24,13 +24,11 @@ def cmd(cmd_slug, json_data=None, output=None, **kwargs):
     """
     require('settings', provided_by=["production", "staging", "dev", ])
 
+    url = 'http://%s/%s/%s.php' % (env.domain, WP_SCRIPTS_DIR, cmd_slug)
+
     if kwargs:
         query_string = '&'.join(["%s=%s" % (key, value) for key, value in kwargs.iteritems()])
-
-    url = 'http://%s/%s/index.php?command=%s' % (env.domain, WP_SCRIPTS_DIR, cmd_slug)
-
-    if query_string:
-        url = url + "&" + query_string
+        url = url + "?" + query_string
 
     if json_data:
         # Make sure we have valid json before proceeding
