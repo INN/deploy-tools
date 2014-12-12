@@ -7,11 +7,13 @@ from fabric.api import task, require
 from fabric.state import env
 from fabric.operations import prompt
 from getpass import getpass
+from pyquery import PyQuery as pq
 
 session = requests.session()
 
 COOKIES_FILE = '/tmp/cookies.txt'
 WP_SCRIPTS_DIR = 'wp-scripts'
+HEADERS = { 'User-Agent': 'Anything goes here' }
 
 __all__ = ['cmd', ]
 
@@ -89,14 +91,19 @@ def authenticate(username=None, password=None):
     if not password:
         password = getpass("Password: ")
 
+    wp_login = requests.get('http://%s/wp-login.php' % env.domain, headers=HEADERS)
+
+    markup = pq(wp_login.content)
+    form = markup.find('form')
+    action = form.attr('action')
+
     form_data = {
         'log': username,
         'pwd': password,
         'submit': 'Log in',
         'testcookie': '1'
     }
-    result = requests.post('http://%s/wp-login.php' % env.domain, data=form_data)
-    return result
+    return requests.post(action, data=form_data, headers=HEADERS)
 
 
 def post(url, data=None, json=None, **kwargs):
@@ -109,6 +116,8 @@ def post(url, data=None, json=None, **kwargs):
         kwargs['cookies'] = ret.cookies
     else:
         kwargs['cookies'] = load_cookies(os.path.expanduser(COOKIES_FILE))
+
+    kwargs['headers'] = HEADERS
 
     return requests.post(url, data=data, json=json, **kwargs)
 
@@ -124,6 +133,8 @@ def get(url, **kwargs):
     else:
         kwargs['cookies'] = load_cookies(os.path.expanduser(COOKIES_FILE))
 
+    kwargs['headers'] = HEADERS
+
     return requests.get(url, **kwargs)
 
 
@@ -132,7 +143,12 @@ def authenticated():
     Try to reach the WordPress dashboard. If we're redirected to the login page, we must not be authenticated.
     """
     try:
-        ret = requests.get('http://%s/wp-admin/' % env.domain, cookies=load_cookies(os.path.expanduser(COOKIES_FILE)), allow_redirects=False)
+        ret = requests.get(
+            'http://%s/wp-admin/' % env.domain,
+            cookies=load_cookies(os.path.expanduser(COOKIES_FILE)),
+            allow_redirects=False,
+            headers=HEADERS
+        )
         if ret.status_code in [301, 302]:
             return False
         elif ret.status_code is 200:
