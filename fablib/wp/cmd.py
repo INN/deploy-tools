@@ -7,7 +7,6 @@ from fabric.api import task, require
 from fabric.state import env
 from fabric.operations import prompt
 from getpass import getpass
-from pprint import pprint
 
 session = requests.session()
 
