@@ -11,7 +11,6 @@ from pyquery import PyQuery as pq
 
 session = requests.session()
 
-COOKIES_FILE = '/tmp/cookies.txt'
 WP_SCRIPTS_DIR = 'wp-scripts'
 HEADERS = { 'User-Agent': 'Anything goes here' }
 
@@ -112,10 +111,10 @@ def post(url, data=None, json=None, **kwargs):
     """
     if not authenticated():
         ret = authenticate()
-        save_cookies(ret.cookies, os.path.expanduser(COOKIES_FILE))
+        save_cookies(ret.cookies, os.path.expanduser(cookies_file()))
         kwargs['cookies'] = ret.cookies
     else:
-        kwargs['cookies'] = load_cookies(os.path.expanduser(COOKIES_FILE))
+        kwargs['cookies'] = load_cookies(os.path.expanduser(cookies_file()))
 
     kwargs['headers'] = HEADERS
 
@@ -129,9 +128,9 @@ def get(url, **kwargs):
     if not authenticated():
         ret = authenticate()
         kwargs['cookies'] = ret.cookies
-        save_cookies(ret.cookies, os.path.expanduser(COOKIES_FILE))
+        save_cookies(ret.cookies, os.path.expanduser(cookies_file()))
     else:
-        kwargs['cookies'] = load_cookies(os.path.expanduser(COOKIES_FILE))
+        kwargs['cookies'] = load_cookies(os.path.expanduser(cookies_file()))
 
     kwargs['headers'] = HEADERS
 
@@ -145,7 +144,7 @@ def authenticated():
     try:
         ret = requests.get(
             'http://%s/wp-admin/' % env.domain,
-            cookies=load_cookies(os.path.expanduser(COOKIES_FILE)),
+            cookies=load_cookies(os.path.expanduser(cookies_file())),
             allow_redirects=False,
             headers=HEADERS
         )
@@ -155,3 +154,7 @@ def authenticated():
             return True
     except IOError:
         return False
+
+
+def cookies_file():
+    return '/tmp/cookies_%s.txt' % env.domain
