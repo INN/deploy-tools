@@ -6,6 +6,7 @@ from fabric import colors
 
 from ..helpers import capture
 
+import cmd
 import maintenance
 import migrations
 import tests
