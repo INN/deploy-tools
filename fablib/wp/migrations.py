@@ -291,7 +291,7 @@ def _wp_users_table_sql(db):
 
         # If the user data hasn't been inserted, insert it.
         existing_user = "existingUser('%s')" % (user_login, )
-        ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (SELECT %s);\n" % (
+        ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE (SELECT %s) IS NULL;\n" % (
             column_names_str, values_str, existing_user)
 
         # If the user data exists, we want to update existing data
@@ -300,11 +300,11 @@ def _wp_users_table_sql(db):
 
         # Change the post_author value from "@newUserID + [old_id]" to whatever
         # the existing user ID is determined to be.
-        ret = ret + "UPDATE wp_%s_posts SET post_author = %s WHERE EXISTS (SELECT %s) AND post_author = %s;\n" % (
+        ret = ret + "UPDATE wp_%s_posts SET post_author = %s WHERE (SELECT %s) IS NOT NULL AND post_author = %s;\n" % (
             env.new_blog_id, existing_user, existing_user, new_user_id)
 
         # Do the same as above but for comments
-        ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE EXISTS (SELECT %s) AND user_id = %s;\n" % (
+        ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE (SELECT %s) IS NOT NULL AND user_id = %s;\n" % (
             env.new_blog_id, existing_user, existing_user, new_user_id)
 
     return ret
