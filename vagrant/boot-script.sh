@@ -51,7 +51,7 @@ debconf-set-selections <<< "mysql-server mysql-server/root_password password $VA
 debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $VAGRANT_DB_PASS"
 
 install_pkg apache2 mysql-server libapache2-mod-auth-mysql \
-    php5-mysql php5 libapache2-mod-php5 php5-mcrypt php5-memcache
+    php5-mysql php5 libapache2-mod-php5 php5-mcrypt php5-memcache \
     php5-gd
 
 # Install memcached php extension
