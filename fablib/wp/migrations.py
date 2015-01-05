@@ -197,8 +197,8 @@ def _get_blog_tables_sql(db):
         table = table % env.new_blog_id
 
         if table == 'wp_%s_posts' % env.new_blog_id:
-            # Only migrate standard post types, ignoring revisions
-            query = "select * from %s where post_type in ('nav_menu_item', 'attachment', 'page', 'post');" % (table, )
+            # Ignore revision post types
+            query = "select * from %s where post_type not in ('revision');" % (table, )
         elif table == 'wp_%s_postmeta' % env.new_blog_id:
             # Ignore meta for post_type = 'revision'
             query = "select * from %s where post_id not in (select ID from wp_%s_posts where post_type = 'revision');" % (table, env.new_blog_id)
