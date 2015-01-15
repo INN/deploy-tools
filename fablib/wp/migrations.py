@@ -12,10 +12,22 @@ from getpass import getpass as _getpass
 
 from .. import local as local_commands
 
-NETWORK_TABLES = ['wp_users', 'wp_usermeta', ]
+NETWORK_TABLES = [
+    'wp_users',
+    'wp_usermeta',
+]
+
 BLOG_TABLES = [
-    'wp_%s_commentmeta', 'wp_%s_comments', 'wp_%s_links', 'wp_%s_options', 'wp_%s_postmeta',
-    'wp_%s_posts', 'wp_%s_term_relationships', 'wp_%s_term_taxonomy', 'wp_%s_terms']
+    'wp_%s_commentmeta',
+    'wp_%s_comments',
+    'wp_%s_links',
+    'wp_%s_options',
+    'wp_%s_postmeta',
+    'wp_%s_posts',
+    'wp_%s_term_relationships',
+    'wp_%s_term_taxonomy',
+    'wp_%s_terms'
+]
 
 try:
     from local_fabfile import EXTRA_BLOG_TABLES
