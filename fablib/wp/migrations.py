@@ -151,6 +151,18 @@ BEGIN
 END//
 DELIMITER ;
 
+DROP FUNCTION IF EXISTS existingUserMeta;
+DELIMITER //
+CREATE FUNCTION existingUserMeta(n VARCHAR(60))
+RETURNS BIGINT
+DETERMINISTIC
+BEGIN
+  DECLARE ret BIGINT;
+  SET ret = (SELECT user_id FROM existing_usermeta WHERE meta_value = n LIMIT 1);
+  RETURN ret;
+END//
+DELIMITER ;
+
 SET @newUmetaID = (SELECT max(umeta_id) FROM wp_usermeta);
 SET @newUserID = (SELECT max(ID) FROM wp_users);
 SET @siteUrl = (SELECT option_value FROM wp_%(new_blog_id)s_options WHERE option_name = 'siteurl');
@@ -178,6 +190,7 @@ DROP TEMPORARY TABLE IF EXISTS existing_users;
 DROP TEMPORARY TABLE IF EXISTS existing_usermeta;
 
 DROP FUNCTION IF EXISTS existingUser;
+DROP FUNCTION IF EXISTS existingUserMeta;
 """
         f.write(content)
 
@@ -236,7 +249,7 @@ def _get_blog_tables_sql(db):
                 elif key == 'user_id':
                     values.append("%s=@newUserID + %s" % (key, value))
                 elif type(value) == str:
-                    values.append("%s='%s'" % (key, db.escape_string(value)))
+                    values.append("%s=%s" % (key, db.escape(value)))
                 elif type(value) == datetime.datetime:
                     values.append("%s='%s'" % (key, value))
                 elif value is None:
@@ -261,7 +274,7 @@ def _get_network_tables_sql(db):
 
 
 def _wp_users_table_sql(db):
-    ret = ''
+    ret = "START TRANSACTION;\n"
     query = "select * from wp_users order by ID;"
     db.query(query)
     result = db.store_result()
@@ -270,7 +283,8 @@ def _wp_users_table_sql(db):
     column_names = [column[0] for column in table_desc]
     column_names_str = ', '.join(column_names)
 
-    for idx in xrange(0, result.num_rows()):
+    rng = xrange(0, result.num_rows())
+    for idx in rng:
         row = result.fetch_row(1, 1)
         data = row[0]
         values = []
@@ -287,8 +301,8 @@ def _wp_users_table_sql(db):
                 new_user_id = "@newUserID + %s" % (old_user_id,)
                 values.append(new_user_id)
             elif type(value) == str:
-                values.append("'%s'" % (db.escape_string(value), ))
-                values_update.append("%s='%s'" % (key, db.escape_string(value)))
+                values.append("%s" % (db.escape(value), ))
+                values_update.append("%s=%s" % (key, db.escape(value)))
             elif type(value) == datetime.datetime:
                 values.append("'%s'" % (value, ))
                 values_update.append("%s='%s'" % (key, value))
@@ -302,7 +316,7 @@ def _wp_users_table_sql(db):
         user_login = data['user_login']
 
         # If the user data hasn't been inserted, insert it.
-        existing_user = "existingUser('%s')" % (user_login, )
+        existing_user = "existingUser(%s)" % (db.escape(user_login), )
         ret = ret + "INSERT INTO wp_users (%s) SELECT %s FROM DUAL WHERE (SELECT %s) IS NULL;\n" % (
             column_names_str, values_str, existing_user)
 
@@ -319,11 +333,17 @@ def _wp_users_table_sql(db):
         ret = ret + "UPDATE wp_%s_comments SET user_id = %s WHERE (SELECT %s) IS NOT NULL AND user_id = %s;\n" % (
             env.new_blog_id, existing_user, existing_user, new_user_id)
 
+        if (idx % 1000) == 999:
+            if idx != (len(rng) - 1):
+                ret = ret + "COMMIT;\nSTART TRANSACTION;\n"
+
+    ret = ret + "COMMIT;"
+
     return ret
 
 
 def _wp_usermeta_table_sql(db):
-    ret = ''
+    ret = "START TRANSACTION;\n"
     query = "select * from wp_usermeta order by user_id;"
     db.query(query)
     result = db.store_result()
@@ -332,7 +352,8 @@ def _wp_usermeta_table_sql(db):
     column_names = [column[0] for column in table_desc]
     column_names_str = ', '.join(column_names)
 
-    for idx in xrange(0, result.num_rows()):
+    rng = xrange(0, result.num_rows())
+    for idx in rng:
         row = result.fetch_row(1, 1)
         data = row[0]
         values = []
@@ -351,8 +372,8 @@ def _wp_usermeta_table_sql(db):
             elif key == 'user_id':
                 values.append("@newUserID + %s" % (value,))
             elif type(value) == str:
-                values.append("'%s'" % (db.escape_string(value), ))
-                values_update.append("%s='%s'" % (key, db.escape_string(value)))
+                values.append("%s" % (db.escape(value), ))
+                values_update.append("%s=%s" % (key, db.escape(value)))
             elif type(value) == datetime.datetime:
                 values.append("'%s'" % (value, ))
                 values_update.append("%s='%s'" % (key, value))
@@ -370,14 +391,14 @@ def _wp_usermeta_table_sql(db):
         nickname_row = nickname_result.fetch_row(1, 1)
 
         try:
-            user_nickname = nickname_row[0]['meta_value']
+            user_nickname = db.escape(nickname_row[0]['meta_value'])
         except IndexError:
             continue
 
-        existing_usermeta_query = "SELECT user_id FROM existing_usermeta WHERE meta_value = '%s' LIMIT 1" % (user_nickname, )
+        existing_usermeta_query = "existingUserMeta(%s)" % (user_nickname, )
 
         # Again, if the data doesn't exist, insert it.
-        ret = ret + "INSERT INTO wp_usermeta (%s) SELECT %s FROM DUAL WHERE NOT EXISTS (%s);\n" % (
+        ret = ret + "INSERT INTO wp_usermeta (%s) SELECT %s FROM DUAL WHERE (SELECT %s) IS NULL;\n" % (
             column_names_str, values_str, existing_usermeta_query)
 
         # If the user data exists, we want to update/replace existing data
@@ -386,5 +407,11 @@ def _wp_usermeta_table_sql(db):
 
         ret = ret + "UPDATE wp_usermeta SET %s WHERE user_id = (%s) AND meta_key = '%s';\n" % (
             values_str, existing_usermeta_query, meta_key)
+
+        if (idx % 1000) == 999:
+            if idx != (len(rng) - 1):
+                ret = ret + "COMMIT;\nSTART TRANSACTION;\n"
+
+    ret = ret + "COMMIT;"
 
     return ret
