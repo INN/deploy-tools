@@ -2,7 +2,7 @@ import os
 
 from fabric.api import require, settings, task
 from fabric.state import env
-from fabric import colors
+from fabric import colors, context_managers
 
 # Other fabfiles
 import local
@@ -18,6 +18,7 @@ from helpers import capture
 env.path = ''
 env.dry_run = False
 env.verbose = False
+env.fabfilepath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 @task
@@ -91,7 +92,9 @@ def deploy():
     Deploy local copy of repository to target environment.
     """
     require('branch', provided_by=[master, stable, branch, ])
-    ret = wp.deploy()
+    with context_managers.lcd(env.fabfilepath): # Allows you to run deploy from any child directory of the project
+        ret = wp.deploy()
+
     if ret.return_code and ret.return_code > 0:
         if ret.return_code in [4, ]:
             print(colors.red("Try running ") + colors.white("fab wp.verify_prerequisites"))
