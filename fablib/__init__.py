@@ -91,5 +91,9 @@ def deploy():
     Deploy local copy of repository to target environment.
     """
     require('branch', provided_by=[master, stable, branch, ])
-    wp.deploy()
-    notify_hipchat()
+    ret = wp.deploy()
+    if ret.return_code and ret.return_code > 0:
+        if ret.return_code in [4, ]:
+            print(colors.red("Try running ") + colors.white("fab wp.verify_prerequisites"))
+    else:
+        notify_hipchat()
