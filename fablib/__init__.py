@@ -2,7 +2,8 @@ import os
 
 from fabric.api import require, settings, task
 from fabric.state import env
-from fabric import colors
+from fabric import colors, context_managers
+from fabric.main import find_fabfile
 
 # Other fabfiles
 import local
@@ -91,5 +92,11 @@ def deploy():
     Deploy local copy of repository to target environment.
     """
     require('branch', provided_by=[master, stable, branch, ])
-    wp.deploy()
-    notify_hipchat()
+    with context_managers.lcd(os.path.dirname(find_fabfile())): # Allows you to run deploy from any child directory of the project
+        ret = wp.deploy()
+
+    if ret.return_code and ret.return_code > 0:
+        if ret.return_code in [4, ]:
+            print(colors.red("Try running ") + colors.white("fab wp.verify_prerequisites"))
+    else:
+        notify_hipchat()
