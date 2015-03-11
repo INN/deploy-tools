@@ -19,7 +19,6 @@ from helpers import capture
 env.path = ''
 env.dry_run = False
 env.verbose = False
-env.fabfilepath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 @task
