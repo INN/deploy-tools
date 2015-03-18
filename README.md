@@ -2,7 +2,7 @@
 
 A box of tools for deploying INN's WordPress sites to WPEngine. Based on Chicago Tribune's [deploy-tools](https://github.com/newsapps/deploy-tools).
 
-[Read documentation for all included commands here.](https://github.com/INN/deploy-tools/blob/master/COMMANDS.md)
+[Read documentation for all included commands here.](https://github.com/INN/deploy-tools/blob/master/docs/COMMANDS.md)
 
 ## Prerequisites
 
@@ -108,7 +108,7 @@ A couple notes:
 
 #### Database commands
 
-These tools include a few commands to ease database setup and manipulation. [Read about them here](https://github.com/INN/deploy-tools/blob/master/COMMANDS.md).
+These tools include a few commands to ease database setup and manipulation. [Read about them here](https://github.com/INN/deploy-tools/blob/master/docs/COMMANDS.md).
 
 ### Installing and/or upgrading WordPress
 
