@@ -8,3 +8,5 @@ This document will contain a complete walkthrough starting with an empty folder 
 - Database dump loaded from a live site and modified to work in the local environment
 - Fabric configured for deploying to a live server
 - PHP tests configured for the theme
+
+As you go through this process, if you encounter errors or unexpected results you should take a look at our [reference on common errors](common-errors.md).
