@@ -116,6 +116,7 @@ def deploy():
                     print(colors.red("An error occurred..."))
                     if not env.verbose:
                         print(colors.yellow('Try deploying with `verbose` for more information...'))
+    return ret
 
 
 def initial_deploy(dest_path):
