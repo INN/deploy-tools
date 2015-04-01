@@ -121,6 +121,10 @@ wget https://phar.phpunit.de/phpunit.phar
 chmod +x phpunit.phar
 mv phpunit.phar /usr/local/bin/phpunit
 
+# Set up PHP error log
+touch /home/$USERNAME/logs/php_errors.log
+chown $USERNAME:www-data /home/$USERNAME/logs/php_errors.log
+
 # Restart everything
 service apache2 restart
 service mysql restart
