@@ -1,1 +1,2 @@
 *.pyc
+fablib/wp/local_fabfile.py
