@@ -137,7 +137,7 @@ def initial_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
     verbose = '--verbose ' if env.verbose else ''
 
-    cmd = 'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
+    command = 'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
         verbose,
         dry_run,
         env.user,
@@ -147,7 +147,7 @@ def initial_deploy(dest_path):
         os.path.normpath(dest_path) + os.sep
     )
     with hide('running', 'warnings'):
-        ret = local(cmd)
+        ret = local(command)
 
     return ret
 
@@ -156,7 +156,7 @@ def do_sftp_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
     verbose = '--verbose ' if env.verbose else ''
 
-    cmd = 'git ftp push %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
+    command = 'git ftp push %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
         verbose,
         dry_run,
         env.user,
@@ -166,7 +166,7 @@ def do_sftp_deploy(dest_path):
         os.path.normpath(dest_path) + os.sep
     )
     with hide('running', 'warnings'):
-        ret = local(cmd)
+        ret = local(command)
 
     return ret
 
@@ -175,7 +175,7 @@ def do_git_deploy():
     dry_run = '--dry-run ' if env.dry_run else ''
     verbose = '--verbose ' if env.verbose else ''
 
-    cmd = 'git push %s%s%s %s:master' % (
+    command = 'git push %s%s%s %s:master' % (
         verbose,
         dry_run,
         env.settings,
@@ -183,7 +183,7 @@ def do_git_deploy():
     )
 
     with hide('running', 'warnings'):
-        ret = local(cmd)
+        ret = local(command)
 
     return ret
 
