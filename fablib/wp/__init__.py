@@ -1,4 +1,5 @@
 import os
+import sys
 
 from fabric.api import local, require, settings, task, get, hide
 from fabric.state import env
@@ -6,34 +7,31 @@ from fabric import colors
 
 from ..helpers import capture
 
-import cmd
-import maintenance
-import migrations
-import tests
-
 from StringIO import StringIO
 
 
 @task
 def verify_prerequisites():
     """
-    Checks to make sure you have curl (with ssh) and git-ftp installed, Attempts installation via brew if you do not.
+    Checks to make sure you have curl (with ssh) and git-ftp installed, attempts installation via
+    brew if you do not.
     """
-    with settings(warn_only=True):
-
+    if env.get('sftp_deploy', False):
         print(colors.cyan("Verifying your installation of curl supports sftp..."))
         ret = capture('curl -V | grep sftp')
         if ret.return_code == 1:
-            import sys
             if sys.platform.startswith('darwin'):
                 print(colors.yellow(
-                    'Your version of curl does not support sftp. Attempting installation of curl with sftp support via brew...'))
+                    'Your version of curl does not support sftp. ' +
+                    'Attempting installation of curl with sftp support via brew...'))
                 capture('brew update')
                 capture('brew install curl --with-ssh')
                 capture('brew link --force curl')
             else:
                 print(colors.red(
-                    'Your version of curl does not support sftp. You may have to recompile it with sftp support. See the deploy-tools README for more information.'
+                    'Your version of curl does not support sftp. ' +
+                    'You may have to recompile it with sftp support. ' +
+                    'See the deploy-tools README for more information.'
                 ))
         else:
             print(colors.green('Your installation of curl supports sftp!'))
@@ -47,8 +45,15 @@ def verify_prerequisites():
             capture('brew install git-ftp')
         else:
             print(colors.green('You have git-ftp installed!'))
+    else:
+        print(colors.cyan("Verifying you have git installed..."))
+        with settings(warn_only=True):
+            ret = capture('git --version')
+            if ret.return_code is not 0:
+                print(colors.red("You do not have git installed or it is not properly configured."))
+                sys.exit(1)
 
-        print(colors.green('Your system is ready to deploy code!'))
+    print(colors.green('Your system is ready to deploy code!'))
 
 
 @task
@@ -106,68 +111,76 @@ def deploy():
 
     with settings(warn_only=True):
         print(colors.cyan("Deploying..."))
-        ret = do_deploy(env.path)
 
-        if ret.return_code and ret.return_code > 0:
-            if ret.return_code in [8, 5, ]:
-                print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
-                ret = initial_deploy(env.path)
-                if ret.return_code and ret.return_code > 0:
-                    print(colors.red("An error occurred..."))
-                    if not env.verbose:
-                        print(colors.yellow('Try deploying with `verbose` for more information...'))
+        if env.get('sftp_deploy', False):
+            ret = do_sftp_deploy(env.path)
+
+            if ret.return_code and ret.return_code > 0:
+                if ret.return_code in [8, 5, ]:
+                    print(colors.cyan("Found no existing git repo on ftp host, initializing..."))
+                    ret = initial_deploy(env.path)
+                    if ret.return_code and ret.return_code > 0:
+                        print(colors.red("An error occurred..."))
+                        if not env.verbose:
+                            print(colors.yellow(
+                                'Try deploying with `verbose` for more information...'))
+        else:
+            ret = do_git_deploy()
     return ret
 
 
 def initial_deploy(dest_path):
-    if env.dry_run:
-        if env.verbose:
-            cmd = 'git ftp init -v --dry-run --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'warnings'):
-                ret = local(cmd)
-        else:
-            cmd = 'git ftp init --dry-run --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'stderr', 'warnings'):
-                ret = local(cmd)
-    else:
-        if env.verbose:
-            cmd = 'git ftp init -v --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'warnings'):
-                ret = local(cmd)
-        else:
-            cmd = 'git ftp init --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'stderr', 'warnings'):
-                ret = local(cmd)
+    dry_run = '--dry-run ' if env.dry_run else ''
+    verbose = '--verbose ' if env.verbose else ''
+
+    cmd = 'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
+        verbose,
+        dry_run,
+        env.user,
+        env.password,
+        env.host_string,
+        env.port,
+        os.path.normpath(dest_path) + os.sep
+    )
+    with hide('running', 'warnings'):
+        ret = local(cmd)
+
     return ret
 
 
-def do_deploy(dest_path):
-    if env.dry_run:
-        if env.verbose:
-            cmd = 'git ftp push -v --dry-run --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'warnings'):
-                ret = local(cmd)
-        else:
-            cmd = 'git ftp push --dry-run --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'stderr', 'warnings'):
-                ret = local(cmd)
-    else:
-        if env.verbose:
-            cmd = 'git ftp push -v --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'warnings'):
-                ret = local(cmd)
-        else:
-            cmd = 'git ftp push --user "%s" --passwd "%s" sftp://%s:%s/%s' % (
-                env.user, env.password, env.host_string, env.port, os.path.normpath(dest_path) + os.sep)
-            with hide('running', 'stderr', 'warnings'):
-                ret = local(cmd)
+def do_sftp_deploy(dest_path):
+    dry_run = '--dry-run ' if env.dry_run else ''
+    verbose = '--verbose ' if env.verbose else ''
+
+    cmd = 'git ftp push %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
+        verbose,
+        dry_run,
+        env.user,
+        env.password,
+        env.host_string,
+        env.port,
+        os.path.normpath(dest_path) + os.sep
+    )
+    with hide('running', 'warnings'):
+        ret = local(cmd)
+
+    return ret
+
+
+def do_git_deploy():
+    dry_run = '--dry-run ' if env.dry_run else ''
+    verbose = '--verbose ' if env.verbose else ''
+
+    cmd = 'git push %s%s%s %s:master' % (
+        verbose,
+        dry_run,
+        env.settings,
+        env.branch
+    )
+
+    with hide('running', 'warnings'):
+        ret = local(cmd)
+
     return ret
 
 

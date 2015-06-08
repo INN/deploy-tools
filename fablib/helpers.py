@@ -127,7 +127,7 @@ def require_env_var(name):
     """
     Be sure that an env variable is defined and that it is not an empty string
     """
-    error = ValueError('Required environment variable `project_name` can not be empty or None')
+    error = ValueError('Required environment variable `%s` can not be empty or None' % name)
     try:
         ret = getattr(env, name)
         if ret is '':
