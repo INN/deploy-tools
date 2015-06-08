@@ -9,6 +9,10 @@ from ..helpers import capture
 
 from StringIO import StringIO
 
+import cmd
+import maintenance
+import tests
+
 
 @task
 def verify_prerequisites():
