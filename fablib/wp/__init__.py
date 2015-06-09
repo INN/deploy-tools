@@ -43,10 +43,14 @@ def verify_prerequisites():
         print(colors.cyan('Ensuring you have git-ftp installed...'))
         ret = capture('git ftp --version')
         if ret.return_code == 1:
+            print(colors.red(
+                'You do not have git-ftp installed!'))
             print(colors.yellow(
-                'You do not have git-ftp installed. Attempting installation via brew...'))
-            capture('brew update')
-            capture('brew install git-ftp')
+                """
+                Install git-ftp version 0.9.0 using the instructions found here:
+                https://github.com/git-ftp/git-ftp/blob/develop/INSTALL.md
+                """))
+            sys.exit(1)
         else:
             print(colors.green('You have git-ftp installed!'))
     else:
