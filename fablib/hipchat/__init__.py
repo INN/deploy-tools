@@ -44,10 +44,11 @@ def notify_hipchat():
     """
     Send notification to a HipChat room
     """
-    if env.hipchat_token and env.hipchat_room_id and not env.dry_run:
+    if env.get('hipchat_token', False) and env.get('hipchat_room_id', False) and not env.dry_run:
         hp = HipChatNotifier(env.hipchat_token)
         name = helpers.capture('git config user.name')
         if name is '':
             name = 'Someone'
-        message = '%s just deployed "%s" (branch: %s) to %s' % (name, env.project_name, env.branch, env.settings)
+        message = '%s just deployed "%s" (branch: %s) to %s' % (
+            name, env.project_name, env.branch, env.settings)
         hp.message(env.hipchat_room_id, 'Deployment', message, True)

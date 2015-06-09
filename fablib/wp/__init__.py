@@ -147,7 +147,6 @@ def deploy():
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
             capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
-            capture('git fetch')
         else:
             print(colors.yellow("No rollback commit found. Unable to set rollback point."))
 
