@@ -93,6 +93,44 @@ def fetch_sql_dump():
     get('wp-content/mysql.sql', 'mysql.sql')
 
 
+def add_git_remote(environment=False):
+    """
+    Adds a WP Engine git remote based on the environment specified.
+    """
+    if not environment:
+        print(colors.red(
+            "You must specify an environment (production, staging) when adding a remote"))
+        return False
+
+    verbose = '--verbose ' if env.verbose else ''
+
+    command = 'git remote %sadd %s git@git.wpengine.com:production/%s.git' % (
+        verbose,
+        environment,
+        env.project_name
+    )
+    with hide('running', 'warnings'):
+        print(colors.cyan('Adding remote for "%s"' % environment))
+        ret = local(command)
+
+    return ret
+
+
+def remote_exists(environment=False):
+    if not environment:
+        print(colors.red(
+            "You must specify an environment (production, staging) when adding a remote"))
+        sys.exit(1)
+
+    with settings(warn_only=True) and hide('running', 'stdout', 'stderr'):
+        check_remotes = capture('git remote -v | grep -E "%s.*%s/%s.*$"' % (
+            environment, environment, env.project_name))
+        if check_remotes.return_code == 0:
+            return True
+        else:
+            return False
+
+
 # Utilities
 def deploy():
     """
@@ -129,6 +167,8 @@ def deploy():
                             print(colors.yellow(
                                 'Try deploying with `verbose` for more information...'))
         else:
+            if not remote_exists(env.settings):
+                add_git_remote(env.settings)
             ret = do_git_deploy()
     return ret
 
