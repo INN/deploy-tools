@@ -176,8 +176,11 @@ def deploy():
                                 'Try deploying with `verbose` for more information...'))
         else:
             if not remote_exists(env.settings):
-                add_git_remote(env.settings)
-            ret = do_git_deploy()
+                added = add_git_remote(env.settings)
+                if added.return_code is 0:
+                    ret = do_git_deploy()
+            else:
+                ret = do_git_deploy()
     return ret
 
 
