@@ -76,6 +76,7 @@ wp-content/debug.log
 /wp-content/sunrise.php
 /wp-content/Icon
 /wp-content/plugins/*
+/wp-content/themes/*
 
 # large/disallowed file types
 # a CDN should be used for these
