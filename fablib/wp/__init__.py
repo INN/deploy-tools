@@ -139,17 +139,22 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
 
     if env.branch != 'rollback':
-        rollback_sha1 = get_rollback_sha1()
+        if env.get('sftp_deploy', False):
+            rollback_sha1 = get_sftp_rollback_sha1()
+        else:
+            rollback_sha1 = get_rollback_sha1()
+
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
             capture('git tag -af rollback %s -m "rollback tag"' % rollback_sha1)
             capture('git fetch')
         else:
-            print(colors.yellow("No .git-ftp.log found on server. Unable to set rollback point."))
+            print(colors.yellow("No rollback commit found. Unable to set rollback point."))
 
-    print(colors.cyan("Checking out branch: %s" % env.branch))
-    capture('git checkout %s' % env.branch)
-    capture('git submodule update --init --recursive')
+    if env.get('sftp_deploy', False):
+        print(colors.cyan("Checking out branch: %s" % env.branch))
+        capture('git checkout %s' % env.branch)
+        capture('git submodule update --init --recursive')
 
     with settings(warn_only=True):
         print(colors.cyan("Deploying..."))
@@ -228,7 +233,7 @@ def do_git_deploy():
     return ret
 
 
-def get_rollback_sha1():
+def get_sftp_rollback_sha1():
     with settings(warn_only=True):
         log_file = StringIO()
         get(remote_path='/.git-ftp.log', local_path=log_file)
@@ -238,3 +243,12 @@ def get_rollback_sha1():
         except IndexError:
             return None
         return rollback_commit
+
+
+def get_rollback_sha1():
+    with settings(warn_only=True):
+        rollback_commit = capture('git --no-pager log -n1 --pretty=format:"%H"')
+        if rollback_commit.return_code == 0:
+            return rollback_commit
+        else:
+            return None
