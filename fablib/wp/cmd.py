@@ -6,6 +6,7 @@ import requests
 from fabric.api import task, require
 from fabric.state import env
 from fabric.operations import prompt
+from fabric import colors
 from getpass import getpass
 from pyquery import PyQuery as pq
 
@@ -61,7 +62,10 @@ def cmd(cmd_slug, json_data=None, output=None, **kwargs):
             else:
                 print ret.content
     else:
-        print "Command request returned: %s %s" % (ret.status_code, ret.reason)
+        print(colors.red("Command request returned: %s %s\n" % (ret.status_code, ret.reason)))
+        print(colors.cyan("Response content:"))
+        print(colors.cyan("-----------------\n"))
+        print ret.content
 
 
 # Utilities
