@@ -42,6 +42,10 @@ def load_settings(blog_id=None):
     """
     print(colors.cyan("Loading settings for blog ID: %s from the `data` directory" % blog_id))
 
+    print(colors.red(
+        "\nWARNING: always search and replace the source domain name on the target" +
+        " environment after loading settings\n"))
+
     if not blog_id:
         raise ValueError("blog_id must not be None")
 
