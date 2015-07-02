@@ -13,7 +13,7 @@ from pyquery import PyQuery as pq
 session = requests.session()
 
 WP_SCRIPTS_DIR = 'wp-scripts'
-HEADERS = { 'User-Agent': 'Anything goes here' }
+HEADERS = {'User-Agent': 'Anything goes here'}
 
 __all__ = ['cmd', ]
 
@@ -34,7 +34,7 @@ def cmd(cmd_slug, json_data=None, output=None, **kwargs):
     if json_data:
         # Make sure we have valid json before proceeding
         try:
-            data = json.loads(json_data)
+            json.loads(json_data)
         except ValueError:
             try:
                 f = open(os.path.expanduser(json_data))
@@ -44,7 +44,7 @@ def cmd(cmd_slug, json_data=None, output=None, **kwargs):
             except IOError:
                 print "Could not parse JSON data."
 
-        ret = post(url, data={ 'json': json_data })
+        ret = post(url, data={'json': json_data})
     else:
         ret = get(url)
 
