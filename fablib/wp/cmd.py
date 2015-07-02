@@ -144,7 +144,8 @@ def get(url, **kwargs):
 
 def authenticated():
     """
-    Try to reach the WordPress dashboard. If we're redirected to the login page, we must not be authenticated.
+    Try to reach the WordPress dashboard. If we're redirected to the login page,
+    we must not be authenticated.
     """
     try:
         ret = requests.get(
