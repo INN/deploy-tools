@@ -108,8 +108,9 @@ def add_git_remote(environment=False):
 
     verbose = '--verbose ' if env.verbose else ''
 
-    command = 'git remote %sadd %s git@git.wpengine.com:production/%s.git' % (
+    command = 'git remote %sadd %s git@git.wpengine.com:%s/%s.git' % (
         verbose,
+        environment,
         environment,
         env.project_name
     )
