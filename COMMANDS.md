@@ -137,10 +137,6 @@ Downloads specified version of WordPress from https://github.com/WordPress/WordP
 
 **version** -- *Required.* A version number to install (e.g. "3.9.1").
 
-#### wp.single_to_multisite_migration
-
-Migrate a stand alone blog to an existing multisite instance
-
 #### wp.verify_prerequisites
 
 Checks to make sure you have curl (with ssh) and git-ftp installed, Attempts installation via brew if you do not.
@@ -154,6 +150,38 @@ Prevents users from logging into the WordPress dashboard by modifying your proje
 #### wp.maintenance.stop
 
 Removes the barrier put in place by `wp.maintenance.start`.
+
+#### wp.cmd:cmd_slug,json_data=None|output=None
+
+**cmd_slug** -- *Required.* Your script/command slug.
+
+**json_data** -- Path to json file with data to be sent over the wire to your script/command.
+
+**output** -- Location to save any response content return by the script/command.
+
+Run an admin/management script hosted on your WP Engine install.
+
+This command looks for a PHP file in the `/wp-scripts/` path of your install.
+
+For example:
+
+    fab staging wp.cmd:menus_dump,blog_id=64
+
+Makes an HTTP request to your staging environment for `/wp-scripts/menus_dump.php`.
+
+See the [wp-scripts](https://github.com/INN/wp-scripts) repository for a sampling of scripts/commands.
+
+You can save the output from your scripts/commands to a local file with the `output` argument.
+
+For example:
+
+    fab production wp.cmd:menus_dump,blog_id=64,output=data/blog_64_menus.json
+
+You can send JSON data over the wire using the `json_data` argument.
+
+For example:
+
+    fab staging wp.cmd:menus_load,blog_id=64,json_data=data/blog_64_menus.json
 
 ### Unit test scaffolding and test runner for plugins and themes
 
