@@ -12,6 +12,7 @@ from StringIO import StringIO
 import cmd
 import maintenance
 import tests
+import blog
 
 
 @task
