@@ -89,6 +89,7 @@ def authenticate(username=None, password=None):
     """
     POST username and password as if logging in via the browser.
     """
+    print(colors.cyan("Enter your username and password for %s" % env.domain))
     if not username:
         username = prompt("Username: ")
     if not password:
