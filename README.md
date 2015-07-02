@@ -45,21 +45,30 @@ Then:
     $ pip install -r requirements.txt
     $ fab wp.verify_prerequisites
 
-If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script uses brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/).
+The `wp.verify_prerequisites` command will notify you of any issues that might prevent you from using the deploy tools in their entirety.
 
 Now edit the example `fabfile.py` to adjust the settings for your project:
 
-    $ env.project_name = ''   # name for the project
+    env.project_name = ''   # name for the project
 
-You'll also need to supply the ssh environment variables for `production` and `staging` (or any other enviornments).
+You'll also want to supply the ssh environment variables for `production` and `staging` (or any other enviornments).
 
-    $ env.hosts       = []    # ssh host for production.
-    $ env.user        = ''    # ssh user for production.
-    $ env.password    = ''    # ssh password for production.
+    env.hosts       = []    # ssh host for production.
+    env.user        = ''    # ssh user for production.
+    env.password    = ''    # ssh password for production.
 
-    $ env.hosts       = []    # ssh host for staging.
-    $ env.user        = ''    # ssh user for staging.
-    $ env.password    = ''    # ssh password for staging.
+    env.hosts       = []    # ssh host for staging.
+    env.user        = ''    # ssh user for staging.
+    env.password    = ''    # ssh password for staging.
+
+By default, the deploy tools will use git for deployment to WP Engine. If you'd rather use sftp to deploy, you can do so by specifying `sftp_deploy` in your `fabfile.py`.
+
+    env.sftp_deploy = True
+
+After setting `env.sftp_deploy` to `True`, make sure you run `wp.verify_prerequisites` to ensure you have the required software installed.
+
+If your version of curl does not support sftp and you wish to use the tools in this repository to deploy, you will have to use a version of curl that does support it. For OSX users, the verification script uses brew to take care of that problem. For users of other operating systems, check your online support communities. Ubuntu users may have success in following [this guide](http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/).
+
 
 ## Usage
 
