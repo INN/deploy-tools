@@ -14,6 +14,16 @@ import maintenance
 import tests
 import blog
 
+__all__ = [
+    'verify_prerequisites',
+    'install',
+    'fetch_sql_dump',
+    'deployed_commit',
+    'cmd',
+    'maintenance',
+    'tests',
+    'blog'
+]
 
 @task
 def verify_prerequisites():
@@ -145,10 +155,7 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
 
     if env.branch != 'rollback':
-        if env.get('sftp_deploy', False):
-            rollback_sha1 = get_sftp_rollback_sha1()
-        else:
-            rollback_sha1 = get_rollback_sha1()
+        rollback_sha1 = deployed_commit()
 
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
@@ -239,6 +246,19 @@ def do_git_deploy():
         ret = local(command)
 
     return ret
+
+
+@task()
+def deployed_commit():
+    """
+    Retrieve the currently-deployed commit for an environment
+    """
+    require('settings', provided_by=["production", "staging", ])
+
+    if env.get('sftp_deploy', False):
+        return get_sftp_rollback_sha1()
+    else:
+        return get_rollback_sha1()
 
 
 def get_sftp_rollback_sha1():
