@@ -256,9 +256,12 @@ def deployed_commit():
     require('settings', provided_by=["production", "staging", ])
 
     if env.get('sftp_deploy', False):
-        return get_sftp_rollback_sha1()
+        commit_hash = get_sftp_rollback_sha1()
     else:
-        return get_rollback_sha1()
+        commit_hash = get_rollback_sha1()
+
+    print(colors.cyan("Currently-deployed commit: %s" % commit_hash))
+    return commit_hash
 
 
 def get_sftp_rollback_sha1():
