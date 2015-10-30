@@ -8,6 +8,7 @@ from fabric import colors
 from ..helpers import capture
 
 from StringIO import StringIO
+from pkg_resources import parse_version
 
 import cmd
 import maintenance
@@ -260,3 +261,24 @@ def get_rollback_sha1():
             return rollback_commit
         else:
             return None
+
+
+@task()
+def runserver():
+    """
+    Run the PHP built-in development server
+
+    - Requires PHP version 5.4 or greater
+    - Uses sudo since WordPress can not run on any port other than 80
+    - Uses lib/router.php as a substitute for .htaccess with PHP web server
+    - Sets error_log to STDERR so that errors appear in the same shell the server was started in
+    """
+    php_version = capture("php -v | head -n 1 | awk '{print $2}'")
+
+    if parse_version(php_version) < parse_version('5.4.0'):
+        print(colors.yellow('This command requires PHP version 5.4 or greater'))
+        exit()
+
+    project_root = os.path.dirname(env.real_fabfile)
+    local(
+        'sudo php -d error_log=/dev/stderr -S 0.0.0.0:80 %s/tools/lib/router.php' % project_root)
