@@ -15,6 +15,16 @@ import maintenance
 import tests
 import blog
 
+__all__ = [
+    'verify_prerequisites',
+    'install',
+    'fetch_sql_dump',
+    'deployed_commit',
+    'cmd',
+    'maintenance',
+    'tests',
+    'blog'
+]
 
 @task
 def verify_prerequisites():
@@ -67,27 +77,26 @@ def verify_prerequisites():
 
 
 @task
-def install(tag):
+def install(tag='master'):
     """
     Downloads specified version of WordPress from https://github.com/WordPress/WordPress and
     installs it.
     """
-    with settings(warn_only=True):
-        try:
-            print(colors.cyan('Downloading WordPress %s' % tag))
-            capture('curl -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag)
+    try:
+        print(colors.cyan('Downloading WordPress %s' % tag))
+        capture('curl -f -L -O "https://github.com/WordPress/WordPress/archive/%s.zip"' % tag)
 
-            print(colors.cyan('Unzipping...'))
-            capture('unzip %s.zip' % tag)
+        print(colors.cyan('Unzipping...'))
+        capture('unzip %s.zip' % tag)
 
-            print(colors.cyan('Copying new files to our project directory...'))
-            capture('rsync -ru WordPress-%s/* .' % tag)
-        finally:
-            print(colors.cyan('Cleaning up...'))
-            capture('rm -Rf %s.zip' % tag)
-            capture('rm -Rf WordPress-%s' % tag)
+        print(colors.cyan('Copying new files to our project directory...'))
+        capture('rsync -ru WordPress-%s/* .' % tag)
+    finally:
+        print(colors.cyan('Cleaning up...'))
+        capture('rm -Rf %s.zip' % tag)
+        capture('rm -Rf WordPress-%s' % tag)
 
-        print(colors.cyan('Finished upgrading WordPress!'))
+    print(colors.cyan('Finished upgrading WordPress!'))
 
 
 @task
@@ -146,10 +155,7 @@ def deploy():
     require('settings', provided_by=["production", "staging", ])
 
     if env.branch != 'rollback':
-        if env.get('sftp_deploy', False):
-            rollback_sha1 = get_sftp_rollback_sha1()
-        else:
-            rollback_sha1 = get_rollback_sha1()
+        rollback_sha1 = deployed_commit()
 
         if rollback_sha1:
             print(colors.cyan("Setting rollback point..."))
@@ -240,6 +246,22 @@ def do_git_deploy():
         ret = local(command)
 
     return ret
+
+
+@task()
+def deployed_commit():
+    """
+    Retrieve the currently-deployed commit for an environment
+    """
+    require('settings', provided_by=["production", "staging", ])
+
+    if env.get('sftp_deploy', False):
+        commit_hash = get_sftp_rollback_sha1()
+    else:
+        commit_hash = get_rollback_sha1()
+
+    print(colors.cyan("Currently-deployed commit: %s" % commit_hash))
+    return commit_hash
 
 
 def get_sftp_rollback_sha1():
