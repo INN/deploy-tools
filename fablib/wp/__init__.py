@@ -20,6 +20,7 @@ __all__ = [
     'install',
     'fetch_sql_dump',
     'deployed_commit',
+    'runserver',
     'cmd',
     'maintenance',
     'tests',
