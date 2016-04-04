@@ -83,7 +83,11 @@ def dev():
     env.hosts = [env.vagrant_host, ]
     env.path = '/vagrant'
     result = capture('vagrant ssh-config | grep IdentityFile')
-    env.key_filename = result.split()[1]
+    result = result.split()[1]
+    if result.startswith('"') and result.endswith('"'):
+        result = result[1:-1]
+
+    env.key_filename = result
 
 
 @task
