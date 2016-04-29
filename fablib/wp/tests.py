@@ -22,7 +22,7 @@ def setup(name):
     """
     Setup unit tests for a theme or plugin
     """
-    require('settings', provided_by=['vagrant', ])
+    require('settings', provided_by=['dev', ])
 
     print(colors.cyan("Setting up tests for " + name + "..."))
 
@@ -53,7 +53,7 @@ def run(name):
     """
     Run unit tests for a theme or plugin
     """
-    require('settings', provided_by=['vagrant', ])
+    require('settings', provided_by=['dev', ])
 
     with cd(env.path):
         plugins = json.loads(helpers.capture('wp plugin list --format=json --fields=name', cmd_type='run'))
