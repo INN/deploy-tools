@@ -6,9 +6,9 @@ from .. import helpers
 __all__ = ['create_db', 'destroy_db', 'load_db', 'dump_db', 'reload_db', 'vagrant', ]
 
 # Local development helpers
-env.vagrant_host = '192.168.33.10'
-env.vagrant_db_user = 'root'
-env.vagrant_db_pass = 'root'
+env.vagrant_host = '192.168.50.4'
+env.vagrant_db_user = 'external'
+env.vagrant_db_pass = 'external'
 
 
 @task
