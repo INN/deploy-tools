@@ -194,9 +194,41 @@ def deploy():
     return ret
 
 
+def initial_submodule_deploy(dest_path):
+    """
+    Set up all the submodules on a remote that may not exist.
+    https://github.com/INN/deploy-tools/issues/52
+    """
+    dry_run = '--dry-run ' if env.dry_run else ''
+    verbose = '--verbose ' if env.verbose else ''
+
+    submodules_command = 'git submodule foreach \'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s$path\'' % (
+        verbose,
+        dry_run,
+        env.user,
+        env.password,
+        env.host_string,
+        env.port,
+        os.path.normpath(dest_path) + os.sep
+    )
+    with hide('running', 'warnings'):
+        ret = local(submodules_command)
+        if ret.return_code and ret.return_code > 0:
+            print(colors.red("An error occurred while initializing submodules..."))
+            if not env.verbose:
+                print(colors.yellow(
+                    'Try deploying with `verbose` for more information...'))
+
+    print(colors.yellow(ret.return_code))
+
 def initial_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
     verbose = '--verbose ' if env.verbose else ''
+
+    if has_submodules():
+        print(colors.cyan("This repository has submodules, initialzing those..."))
+        submodules_ret = initial_submodule_deploy(dest_path)
+
 
     command = 'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s' % (
         verbose,
@@ -283,7 +315,13 @@ def deployed_commit():
 def get_sftp_rollback_sha1():
     with settings(warn_only=True):
         log_file = StringIO()
-        get(remote_path='/.git-ftp.log', local_path=log_file)
+        try:
+            with hide('running', 'warnings'):
+                get(remote_path='/.git-ftp.log', local_path=log_file)
+        except:
+            print(colors.red('There is no .git-ftp.log on the remote server!'))
+            return None
+
         log_file.seek(0)
         try:
             rollback_commit = log_file.read().splitlines()[0]
