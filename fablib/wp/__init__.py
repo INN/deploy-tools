@@ -22,7 +22,8 @@ __all__ = [
     'cmd',
     'maintenance',
     'tests',
-    'blog'
+    'blog',
+    'has_submodules'
 ]
 
 @task
@@ -210,6 +211,20 @@ def initial_deploy(dest_path):
 
     return ret
 
+@task
+def has_submodules():
+    command = "git submodule foreach --quiet 'echo $path'"
+
+    with hide('running', 'warnings'):
+        ret = local(command, capture=True)
+
+    if ret:
+        print ret
+    else:
+        print 'false'
+
+    return ret
+
 
 def do_sftp_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
@@ -247,7 +262,7 @@ def do_git_deploy():
     return ret
 
 
-@task()
+@task
 def deployed_commit():
     """
     Retrieve the currently-deployed commit for an environment
