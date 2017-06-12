@@ -3,7 +3,8 @@ import sys
 
 from fabric.api import local, require, settings, task, get, hide
 from fabric.state import env
-from fabric import colors
+from fabric import colors, context_managers
+from fabric.main import find_fabfile
 
 from ..helpers import capture
 
@@ -213,18 +214,19 @@ def initial_deploy(dest_path):
 
 @task
 def has_submodules():
+    """
+    Get a list of submodules in the current umbrella. Return false/true based on whether the return is empty.
+    """
     command = "git submodule foreach --quiet 'echo $path'"
 
     with hide('running', 'warnings'):
-        ret = local(command, capture=True)
+        with context_managers.lcd(os.path.dirname(find_fabfile())):
+            ret = local(command, capture=True)
 
     if ret:
-        print ret
+        return True
     else:
-        print 'false'
-
-    return ret
-
+        return False
 
 def do_sftp_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
