@@ -202,6 +202,26 @@ def initial_submodule_deploy(dest_path):
     dry_run = '--dry-run ' if env.dry_run else ''
     verbose = '--verbose ' if env.verbose else ''
 
+    list_submodules_command = 'git submodule foreach --quiet \'echo $name\''
+    submodules = local(list_submodules_command)
+    submodules = submodules.split()
+
+    # only actually do this if we're not dry-running
+    if not env.dry_run:
+        for submodule in submodules:
+            submodules_command = 'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s$path' % (
+                verbose,
+                dry_run,
+                env.user,
+                env.password,
+                env.host_string,
+                env.port,
+                os.path.normpath(dest_path) + os.sep + submodule + os.sep
+            )
+    else:
+        print(colors.yellow('In non-dry-run scenarios, this is where we would create the remote directories via curl.'))
+
+
     submodules_command = 'git submodule foreach \'git ftp init %s%s--user "%s" --passwd "%s" sftp://%s:%s/%s$path\'' % (
         verbose,
         dry_run,
