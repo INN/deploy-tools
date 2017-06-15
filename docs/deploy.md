@@ -10,13 +10,40 @@ Before running any deploy, you'll need to make sure:
 
 Here's a table of contents of this page:
 
-- Normal Deploy
+- Deploy, short version
+- Normal deploy, explained
 - Deploy a site for the first time via SFTP
 - Deploy fails with "failed to resolve ... as a valid commit"
 - Deploying to a site that has been edited outside of version control
 
 
-## Simple deploy
+## Deploy, short version
+
+Deploying staging
+
+```
+workon largo
+git checkout staging
+git pull
+git push
+fab staging branch:staging dry_run deploy
+fab staging branch:staging deploy
+```
+
+Deploying production, after merging staging into master:
+
+```
+workon largo
+git checkout master
+git pull
+git push
+fab production branch:master dry_run deploy
+fab production branch:master deploy
+```
+
+And then go clear the CDN caches.
+
+## Normal deploy, explained
 
 Let's test-deploy the 'staging' branch to the staging environment. This doesn't upload anything, but just makes sure that everything can be uploaded.
 
@@ -38,6 +65,8 @@ When it comes time to deploy to production:
 
 	fab production master dry_run deploy
 	fab production master deploy
+
+After deploying to production, be sure to clear the production CDN caches.
 
 ## Deploy a site for the first time via SFTP
 
