@@ -19,29 +19,45 @@ Here's a table of contents of this page:
 
 ## Deploy, short version
 
-Deploying staging
+Deploying the staging branch to the staging environment
 
 ```
 workon largo
 git checkout staging
 git pull
+git submodule update --init --recursive
 git push
 fab staging branch:staging dry_run deploy
 fab staging branch:staging deploy
 ```
 
-Deploying production, after merging staging into master:
+After merging the staging branch into the master branch, you should deploy the master branch to the staging environment to make sure that the post-merge master branch is functioning as expected. Changes may have been made in the master branch that negate the changes made on staging, or that cause conflicts. So deploy master to staging:
 
 ```
 workon largo
 git checkout master
 git pull
+git submodule update --init --recursive
+git push
+fab staging branch:master dry_run deploy
+fab staging branch:master deploy
+```
+
+Once you've verified that the master branch works correctly, it's time to deploy the master branch to the production environment:
+
+```
+workon largo
+git checkout master
+git pull
+git submodule update --init --recursive
 git push
 fab production branch:master dry_run deploy
 fab production branch:master deploy
 ```
 
 And then go clear the CDN caches.
+
+The pull/push workflow here assumes that you've been working on a project locally; if you're just pulling down changes on a fast-forward pull, you don't have any changes to push to the remote (GitHub) and so you don't need to run `git push`. You'll know if it's a fast-forward pull if the output of `git pull` said so.
 
 ## Normal deploy, explained
 
