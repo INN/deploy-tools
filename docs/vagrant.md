@@ -4,7 +4,7 @@ This repository ships with a default configuration. You do not have to use it; a
 
 The examples directory includes a `Vagrantfile`, a bunch of config files for Apache, PHP, MySQL and a `boot-script.sh` for provisioning a Vagrant instance for local development.
 
-Assuming you have [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](http://www.vagrantup.com/downloads) installed, and enough spare disk space, start the Vagrant box with:
+Assuming you have [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](http://www.vagrantup.com/downloads.html) installed, and enough spare disk space, start the Vagrant box with:
 
     $ vagrant up
 
