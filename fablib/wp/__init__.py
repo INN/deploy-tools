@@ -36,18 +36,20 @@ def verify_prerequisites():
         ret = capture('curl -V | grep sftp')
         if ret.return_code == 1:
             if sys.platform.startswith('darwin'):
-                print(colors.yellow(
-                    'Your version of curl does not support sftp. ' +
-                    'Attempting installation of curl with sftp support via brew...'))
-                capture('brew update')
-                capture('brew install curl --with-ssh')
-                capture('brew link --force curl')
+                print(colors.red(
+                    "Your version of curl does not support sftp...\n" +
+                    "You can attempt installing curl+sftp by running:\n"))
+                print(colors.cyan(
+                    "  brew update\n" +
+                    "  brew install curl --with-ssh\n" +
+                    "  brew link --force curl"))
             else:
                 print(colors.red(
-                    'Your version of curl does not support sftp. ' +
-                    'You may have to recompile it with sftp support. ' +
-                    'See the deploy-tools README for more information.'
+                    "Your version of curl does not support sftp.\n" +
+                    "You may have to recompile it with sftp support.\n" +
+                    "See the deploy-tools README for more information."
                 ))
+            sys.exit(1)
         else:
             print(colors.green('Your installation of curl supports sftp!'))
 
@@ -55,12 +57,12 @@ def verify_prerequisites():
         ret = capture('git ftp --version')
         if ret.return_code == 1:
             print(colors.red(
-                'You do not have git-ftp installed!'))
+                'You do not have git-ftp installed!'
+            ))
             print(colors.yellow(
-                """
-                Install git-ftp version 0.9.0 using the instructions found here:
-                https://github.com/git-ftp/git-ftp/blob/develop/INSTALL.md
-                """))
+                "Install git-ftp version 0.9.0 using the instructions found here:\n" +
+                "https://github.com/git-ftp/git-ftp/blob/develop/INSTALL.md"
+            ))
             sys.exit(1)
         else:
             print(colors.green('You have git-ftp installed!'))
