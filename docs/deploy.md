@@ -31,7 +31,9 @@ fab staging branch:staging dry_run deploy
 fab staging branch:staging deploy
 ```
 
-After **merging the staging branch into the master branch**, you should deploy the master branch to the staging environment to make sure that the post-merge master branch is functioning as expected. Changes may have been made in the master branch that negate the changes made on staging, or that cause conflicts. So deploy master to staging:
+Merge the staging branch into the master branch. This can be done by [opening a pull request](https://help.github.com/articles/creating-a-pull-request/) on GitHub from the staging branch into the master branch, and subsequently [merging it](https://help.github.com/articles/merging-a-pull-request/). This can also be done by checking out master on your local computer, pulling changes from upstream, then merging the staging branch.
+
+After merging staging into master, you should deploy the master branch to the staging environment to make sure that the post-merge master branch is functioning as expected. Changes may have been made in the master branch that negate the changes made on staging, or that cause conflicts. Therefore, deploy master to staging:
 
 ```
 workon largo
