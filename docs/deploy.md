@@ -31,7 +31,7 @@ fab staging branch:staging dry_run deploy
 fab staging branch:staging deploy
 ```
 
-After merging the staging branch into the master branch, you should deploy the master branch to the staging environment to make sure that the post-merge master branch is functioning as expected. Changes may have been made in the master branch that negate the changes made on staging, or that cause conflicts. So deploy master to staging:
+After **merging the staging branch into the master branch**, you should deploy the master branch to the staging environment to make sure that the post-merge master branch is functioning as expected. Changes may have been made in the master branch that negate the changes made on staging, or that cause conflicts. So deploy master to staging:
 
 ```
 workon largo
